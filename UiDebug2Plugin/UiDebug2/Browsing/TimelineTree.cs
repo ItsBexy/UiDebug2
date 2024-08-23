@@ -1,0 +1,375 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+
+using Dalamud.Interface.Utility;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
+
+using static Dalamud.Interface.ColorHelpers;
+using static Dalamud.Utility.Util;
+using static FFXIVClientStructs.FFXIV.Component.GUI.AtkUIColorHolder.Delegates;
+using static FFXIVClientStructs.FFXIV.Component.GUI.NodeType;
+using static ImGuiNET.ImGuiTableColumnFlags;
+using static ImGuiNET.ImGuiTableFlags;
+using static UiDebug2.Utility.Gui;
+
+namespace UiDebug2.Browsing;
+
+public unsafe partial struct TimelineTree
+{
+    public AtkResNode* Node;
+
+    public nint NodePtr;
+
+    public TimelineTree(AtkResNode* node)
+    {
+        this.Node = node;
+        this.NodePtr = (nint)node;
+    }
+
+    public AtkTimeline* NodeTimeline => Node->Timeline;
+
+    public AtkTimelineResource* Resource => NodeTimeline->Resource;
+
+    public AtkTimelineAnimation* ActiveAnimation => NodeTimeline->ActiveAnimation;
+
+    public void Print()
+    {
+        if (this.NodeTimeline == null)
+        {
+            return;
+        }
+
+        var count = Resource->AnimationCount;
+
+        if (count > 0)
+        {
+            if (NestedTreePush($"Timeline##{this.NodePtr:X}timeline", out _))
+            {
+                PrintFieldValuePair("Timeline", $"{(nint)this.NodeTimeline:X}");
+
+                ImGui.SameLine();
+
+                ShowStruct(this.NodeTimeline);
+
+                PrintFieldValuePairs(
+                    ("Id", $"{NodeTimeline->Resource->Id}"),
+                    ("Parent Time", $"{NodeTimeline->ParentFrameTime:F2} ({NodeTimeline->ParentFrameTime * 30:F0})"),
+                    ("Frame Time", $"{NodeTimeline->FrameTime:F2} ({NodeTimeline->FrameTime * 30:F0})"));
+
+                PrintFieldValuePairs(("Active Label Id", $"{NodeTimeline->ActiveLabelId}"), ("Duration", $"{NodeTimeline->LabelFrameIdxDuration}"), ("End Frame", $"{NodeTimeline->LabelEndFrameIdx}"));
+                ImGui.TextColored(new(0.6f, 0.6f, 0.6f, 1), "Animation List");
+
+                for (var a = 0; a < count; a++)
+                {
+                    var animation = Resource->Animations[a];
+                    var isActive = this.ActiveAnimation != null && animation.Equals(*this.ActiveAnimation);
+                    this.PrintAnimation(animation, a, isActive, (nint)(NodeTimeline->Resource->Animations + (a * sizeof(AtkTimelineAnimation))));
+                }
+
+                ImGui.TreePop();
+            }
+        }
+    }
+
+    public void PrintAnimation(AtkTimelineAnimation animation, int a, bool isActive, nint address)
+    {
+        var columns = this.BuildColumns(animation);
+
+        ImGui.PushStyleColor(ImGuiCol.Text, isActive ? new Vector4(1, 0.65F, 0.4F, 1) : new(1));
+        var treePush = ImGui.TreeNode($"[#{a}] [Frames {animation.StartFrameIdx}-{animation.EndFrameIdx}] {(isActive ? " (Active)" : string.Empty)}###{(nint)this.Node}animTree{a}");
+        ImGui.PopStyleColor();
+
+        if (treePush)
+        {
+            PrintFieldValuePair("Animation", $"{address:X}");
+
+            ShowStruct((AtkTimelineAnimation*)address);
+
+            if (columns.Count > 0)
+            {
+                ImGui.BeginTable($"##{(nint)this.Node}animTable{a}", columns.Count, Borders | SizingFixedFit | RowBg | NoHostExtendX);
+
+                foreach (var c in columns)
+                {
+                    ImGui.TableSetupColumn(c.Name, WidthFixed, c.Width);
+                }
+
+                ImGui.TableHeadersRow();
+
+                var rows = columns.Select(static c => c.Count).Max();
+
+                for (var i = 0; i < rows; i++)
+                {
+                    ImGui.TableNextRow();
+
+                    foreach (var c in columns)
+                    {
+                        ImGui.TableNextColumn();
+                        c.PrintValueAt(i);
+                    }
+                }
+
+                ImGui.EndTable();
+            }
+
+            ImGui.TreePop();
+        }
+    }
+
+    public List<IKeyGroupColumn> BuildColumns(AtkTimelineAnimation animation)
+    {
+        var keyGroups = animation.KeyGroups;
+        var columns = new List<IKeyGroupColumn>();
+
+        GetFrameColumn(keyGroups, columns, animation.EndFrameIdx);
+
+        GetPosColumns(keyGroups[0], columns);
+
+        GetRotationColumn(keyGroups[1], columns);
+
+        GetScaleColumns(keyGroups[2], columns);
+
+        GetAlphaColumn(keyGroups[3], columns);
+
+        GetTintColumns(keyGroups[4], columns);
+
+        if (Node->Type is Image or NineGrid or ClippingMask)
+        {
+            GetPartIdColumn(keyGroups[5], columns);
+        }
+        else if (Node->Type == Text)
+        {
+            GetTextColorColumn(keyGroups[5], columns);
+        }
+
+        GetEdgeColumn(keyGroups[6], columns);
+
+        GetLabelColumn(keyGroups[7], columns);
+
+        return columns;
+    }
+
+    internal static void GetFrameColumn(Span<AtkTimelineKeyGroup> keyGroups, List<IKeyGroupColumn> columns, ushort endFrame)
+    {
+        for (var i = 0; i < keyGroups.Length; i++)
+        {
+            if (keyGroups[i].Type != AtkTimelineKeyGroupType.None)
+            {
+                var keyGroup = keyGroups[i];
+                var idColumn = new KeyGroupColumn<ushort>("Frame");
+
+                for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+                {
+                    idColumn.Add(keyGroup.KeyFrames[f].FrameIdx);
+                }
+
+                if (idColumn.Values.Last() != endFrame)
+                {
+                    idColumn.Add(endFrame);
+                }
+
+                columns.Add(idColumn);
+                break;
+            }
+        }
+    }
+
+    internal static void GetPosColumns(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var xColumn = new KeyGroupColumn<float>("X");
+        var yColumn = new KeyGroupColumn<float>("Y");
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            var (x, y) = keyGroup.KeyFrames[f].Value.Float2;
+
+            xColumn.Add(x);
+            yColumn.Add(y);
+        }
+
+        columns.Add(xColumn);
+        columns.Add(yColumn);
+    }
+
+    internal static void GetRotationColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var rotColumn = new KeyGroupColumn<float>("Rotation", static r => ImGui.Text($"{r * (180d / Math.PI):F1}°"));
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            rotColumn.Add(keyGroup.KeyFrames[f].Value.Float);
+        }
+
+        columns.Add(rotColumn);
+    }
+
+    internal static void GetScaleColumns(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var scaleXColumn = new KeyGroupColumn<float>("ScaleX");
+        var scaleYColumn = new KeyGroupColumn<float>("ScaleY");
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            var (scaleX, scaleY) = keyGroup.KeyFrames[f].Value.Float2;
+
+            scaleXColumn.Add(scaleX);
+            scaleYColumn.Add(scaleY);
+        }
+
+        columns.Add(scaleXColumn);
+        columns.Add(scaleYColumn);
+    }
+
+    internal static void GetAlphaColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var alphaColumn = new KeyGroupColumn<byte>("Alpha", PrintAlpha);
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            alphaColumn.Add(keyGroup.KeyFrames[f].Value.Byte);
+        }
+
+        columns.Add(alphaColumn);
+    }
+
+    internal static void GetTintColumns(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var addRGBColumn = new KeyGroupColumn<Vector3>("Add", PrintAddCell) { Width = 110 };
+        var multiplyRGBColumn = new KeyGroupColumn<ByteColor>("Multiply", PrintMultiplyCell) { Width = 110 };
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            var nodeTint = keyGroup.KeyFrames[f].Value.NodeTint;
+
+            addRGBColumn.Add(new Vector3(nodeTint.AddR, nodeTint.AddG, nodeTint.AddB));
+            multiplyRGBColumn.Add(nodeTint.MultiplyRGB);
+        }
+
+        columns.Add(addRGBColumn);
+        columns.Add(multiplyRGBColumn);
+    }
+
+    internal static void GetTextColorColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var textColorColumn = new KeyGroupColumn<ByteColor>("Text Color", PrintRGB);
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            textColorColumn.Add(keyGroup.KeyFrames[f].Value.RGB);
+        }
+
+        columns.Add(textColorColumn);
+    }
+
+    internal static void GetPartIdColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var partColumn = new KeyGroupColumn<ushort>("Part ID");
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            partColumn.Add(keyGroup.KeyFrames[f].Value.UShort);
+        }
+
+        columns.Add(partColumn);
+    }
+
+    internal static void GetEdgeColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var edgeColorColumn = new KeyGroupColumn<ByteColor>("Edge Color", PrintRGB);
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            edgeColorColumn.Add(keyGroup.KeyFrames[f].Value.RGB);
+        }
+
+        columns.Add(edgeColorColumn);
+    }
+
+    internal static void GetLabelColumn(AtkTimelineKeyGroup keyGroup, List<IKeyGroupColumn> columns)
+    {
+        if (keyGroup.KeyFrameCount <= 0)
+        {
+            return;
+        }
+
+        var labelColumn = new KeyGroupColumn<ushort>("Label");
+
+        for (var f = 0; f < keyGroup.KeyFrameCount; f++)
+        {
+            labelColumn.Add(keyGroup.KeyFrames[f].Value.Label.LabelId);
+        }
+
+        columns.Add(labelColumn);
+    }
+
+    internal static void PrintRGB(ByteColor c) => PrintColor(c, $"0x{SwapEndianness(c.RGBA) >> 8:X6}");
+
+    internal static void PrintAlpha(byte b) => PrintColor(new Vector4(b / 255f), PadEvenly($"{b}", 25));
+
+    internal static void PrintAddCell(Vector3 add)
+    {
+        var fmt = PadEvenly($"{PadEvenly($"{add.X}", 25)}{PadEvenly($"{add.Y}", 25)}{PadEvenly($"{add.Z}", 25)}", 100);
+        PrintColor(new Vector4((add / new Vector3(510f)) + new Vector3(0.5f), 1), fmt);
+    }
+
+    internal static void PrintMultiplyCell(ByteColor byteColor)
+    {
+        var multiply = new Vector3(byteColor.R, byteColor.G, byteColor.B);
+        var fmt = PadEvenly($"{PadEvenly($"{multiply.X}", 25)}{PadEvenly($"{multiply.Y}", 25)}{PadEvenly($"{multiply.Z}", 25)}", 100);
+        PrintColor(multiply / 255f, fmt);
+    }
+
+    internal static string PadEvenly(string str, float size)
+    {
+        while (ImGui.CalcTextSize(str).X < size * ImGuiHelpers.GlobalScale)
+        {
+            str = $" {str} ";
+        }
+
+        return str;
+    }
+}
