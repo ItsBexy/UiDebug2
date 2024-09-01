@@ -39,8 +39,14 @@ internal partial class UiDebug2 : IDisposable
 
     public void Dispose()
     {
-        PopoutWindows.RemoveAllWindows();
+        foreach (var a in AddonTrees)
+        {
+            a.Value.Dispose();
+        }
+
+        AddonTrees.Clear();
         PluginInterface.UiBuilder.Draw -= DrawPopouts;
+        PopoutWindows.RemoveAllWindows();
         this.elementSelector.Dispose();
     }
 

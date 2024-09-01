@@ -19,8 +19,8 @@ internal sealed class UiDebug2Plugin : IDalamudPlugin
 
         PluginInterface.Create<Service>();
 
-        this.UiDebug = new(GameGui, Log);
-        this.DebugWindow = new(this.UiDebug);
+        this.UiDebug2 = new(GameGui, Log);
+        this.DebugWindow = new(this.UiDebug2);
 
         WindowSystem.AddWindow(this.DebugWindow);
 
@@ -36,16 +36,15 @@ internal sealed class UiDebug2Plugin : IDalamudPlugin
 
     internal DebugWindow DebugWindow { get; init; }
 
-    internal UiDebug2 UiDebug { get; init; }
+    internal UiDebug2 UiDebug2 { get; init; }
 
     public static void DrawUI() => WindowSystem.Draw();
 
     public void Dispose()
     {
-        WindowSystem.RemoveAllWindows();
-
         this.DebugWindow.Dispose();
-
+        this.UiDebug2.Dispose();
+        WindowSystem.RemoveAllWindows();
         CommandManager.RemoveHandler(CommandName);
     }
 
