@@ -99,16 +99,22 @@ internal unsafe partial class UiDebug2
         var safeLength = Math.Min(atkUnitList->Count, atkUnitList->Entries.Length);
 
         var options = new List<AddonOption>();
+        var totalCount = 0;
+        var matchCount = 0;
         var anyVisible = false;
-        var anyFound = false;
+
+        var usingFilter = this.visFilter || !string.IsNullOrEmpty(this.addonNameSearch);
 
         for (var i = 0; i < safeLength; i++)
         {
             var addon = atkUnitList->Entries[i].Value;
+
             if (addon == null)
             {
                 continue;
             }
+
+            totalCount++;
 
             if (this.visFilter && !addon->IsVisible)
             {
@@ -120,18 +126,19 @@ internal unsafe partial class UiDebug2
                 continue;
             }
 
-            anyFound = true;
+            matchCount++;
             anyVisible |= addon->IsVisible;
             options.Add(new AddonOption(addon->NameString, addon->IsVisible));
         }
 
-        if (!anyFound)
+        if (matchCount == 0)
         {
             return;
         }
 
         ImGui.PushStyleColor(ImGuiCol.Text, anyVisible ? new Vector4(1) : new Vector4(0.6f, 0.6f, 0.6f, 1));
-        var treePush = ImGui.TreeNodeEx($"{unit.Name} [{options.Count}]###unitListTree{unit.Name}");
+        var countStr = $"{(usingFilter ? $"{matchCount}/" : string.Empty)}{totalCount}";
+        var treePush = ImGui.TreeNodeEx($"{unit.Name} [{countStr}]###unitListTree{unit.Index}");
         ImGui.PopStyleColor();
 
         if (treePush)
@@ -139,7 +146,7 @@ internal unsafe partial class UiDebug2
             foreach (var option in options)
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, option.Visible ? new Vector4(0.1f, 1f, 0.1f, 1f) : new Vector4(0.6f, 0.6f, 0.6f, 1));
-                if (ImGui.Selectable($"{option.Name}##", this.SelectedAddonName == option.Name))
+                if (ImGui.Selectable($"{option.Name}##select{option.Name}", this.SelectedAddonName == option.Name))
                 {
                     this.SelectedAddonName = option.Name;
                 }

@@ -14,7 +14,7 @@ namespace UiDebug2;
 // Customised version of https://github.com/Caraxi/SimpleTweaksPlugin/blob/main/Debugging/UIDebug.cs from https://github.com/aers/FFXIVUIDebug
 internal partial class UiDebug2 : IDisposable
 {
-    private ElementSelector elementSelector;
+    private readonly ElementSelector elementSelector;
 
     internal UiDebug2(IGameGui gameGui, IPluginLog pluginLog)
     {
