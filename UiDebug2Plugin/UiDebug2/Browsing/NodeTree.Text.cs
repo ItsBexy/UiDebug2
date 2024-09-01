@@ -54,9 +54,9 @@ internal unsafe partial class TextNodeTree : ResNodeTree
             ("Font Size", $"{TxtNode->FontSize}"),
             ("Alignment", $"{TxtNode->AlignmentType}"));
 
-        PrintColor(TxtNode->TextColor, $"Text Color: 0x{SwapEndianness(TxtNode->TextColor.RGBA) >> 8:X6}");
+        PrintColor(TxtNode->TextColor, $"Text Color: {SwapEndianness(TxtNode->TextColor.RGBA):X8}");
         ImGui.SameLine();
-        PrintColor(TxtNode->EdgeColor, $"Edge Color: 0x{SwapEndianness(TxtNode->EdgeColor.RGBA) >> 8:X6}");
+        PrintColor(TxtNode->EdgeColor, $"Edge Color: {SwapEndianness(TxtNode->EdgeColor.RGBA):X8}");
 
         this.PrintPayloads();
     }

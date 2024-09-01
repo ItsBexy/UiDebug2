@@ -17,6 +17,7 @@ using static System.Reflection.BindingFlags;
 using static Dalamud.Interface.FontAwesomeIcon;
 using static Dalamud.Interface.UiBuilder;
 using static Dalamud.Interface.Utility.ImGuiHelpers;
+using static FFXIVClientStructs.FFXIV.Component.GUI.NodeFlags;
 using static ImGuiNET.ImGuiCol;
 using static ImGuiNET.ImGuiWindowFlags;
 using static UiDebug2.UiDebug2;
@@ -180,7 +181,7 @@ internal unsafe class ElementSelector : IDisposable
                     continue;
                 }
 
-                if (!addon->IsVisible || !addon->RootNode->IsVisible())
+                if (!addon->IsVisible || !addon->RootNode->NodeFlags.HasFlag(Visible))
                 {
                     continue;
                 }

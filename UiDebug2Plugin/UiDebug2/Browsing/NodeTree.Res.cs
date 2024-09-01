@@ -10,6 +10,7 @@ using UiDebug2.Utility;
 using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Interface.FontAwesomeIcon;
 using static Dalamud.Utility.Util;
+using static FFXIVClientStructs.FFXIV.Component.GUI.NodeFlags;
 using static UiDebug2.Browsing.Events;
 using static UiDebug2.ElementSelector;
 using static UiDebug2.UiDebug2;
@@ -153,7 +154,7 @@ public unsafe partial class ResNodeTree : IDisposable
 
     internal void PrintTree(uint? index, bool forceOpen = false)
     {
-        var visible = Node->IsVisible();
+        var visible = Node->NodeFlags.HasFlag(Visible);
 
         var displayColor = !visible ? new Vector4(0.8f, 0.8f, 0.8f, 1) :
                            Node->Color.A == 0 ? new(0.015f, 0.575f, 0.355f, 1) :
@@ -216,9 +217,17 @@ public unsafe partial class ResNodeTree : IDisposable
         var y = ImGui.GetCursorPosY();
 
         ImGui.SetCursorPosY(y - 2);
-        if (ImGuiComponents.IconButton("vis", Node->IsVisible() ? Eye : EyeSlash, Node->IsVisible() ? new Vector4(0.0f, 0.8f, 0.2f, 1f) : new(0.6f, 0.6f, 0.6f, 1)))
+        var isVisible = Node->NodeFlags.HasFlag(Visible);
+        if (ImGuiComponents.IconButton("vis", isVisible ? Eye : EyeSlash, isVisible ? new Vector4(0.0f, 0.8f, 0.2f, 1f) : new(0.6f, 0.6f, 0.6f, 1)))
         {
-            Node->ToggleVisibility(!Node->IsVisible());
+            if (isVisible)
+            {
+                Node->NodeFlags &= ~Visible;
+            }
+            else
+            {
+                Node->NodeFlags |= Visible;
+            }
         }
 
         if (ImGui.IsItemHovered())

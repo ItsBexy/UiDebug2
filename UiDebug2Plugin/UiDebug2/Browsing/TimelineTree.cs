@@ -10,7 +10,6 @@ using ImGuiNET;
 
 using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Utility.Util;
-using static FFXIVClientStructs.FFXIV.Component.GUI.AtkUIColorHolder.Delegates;
 using static FFXIVClientStructs.FFXIV.Component.GUI.NodeType;
 using static ImGuiNET.ImGuiTableColumnFlags;
 using static ImGuiNET.ImGuiTableFlags;
@@ -346,13 +345,13 @@ public unsafe partial struct TimelineTree
         columns.Add(labelColumn);
     }
 
-    internal static void PrintRGB(ByteColor c) => PrintColor(c, $"0x{SwapEndianness(c.RGBA) >> 8:X6}");
+    internal static void PrintRGB(ByteColor c) => PrintColor(c, $"0x{SwapEndianness(c.RGBA):X8}");
 
     internal static void PrintAlpha(byte b) => PrintColor(new Vector4(b / 255f), PadEvenly($"{b}", 25));
 
     internal static void PrintAddCell(Vector3 add)
     {
-        var fmt = PadEvenly($"{PadEvenly($"{add.X}", 25)}{PadEvenly($"{add.Y}", 25)}{PadEvenly($"{add.Z}", 25)}", 100);
+        var fmt = PadEvenly($"{PadEvenly($"{add.X}", 30)}{PadEvenly($"{add.Y}", 30)}{PadEvenly($"{add.Z}", 30)}", 100);
         PrintColor(new Vector4((add / new Vector3(510f)) + new Vector3(0.5f), 1), fmt);
     }
 

@@ -52,9 +52,11 @@ public unsafe partial class ResNodeTree
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}position", ref pos))
+        if (ImGui.DragFloat2($"##{this.NodePtr:X}position", ref pos, 1, default, default, "%.0f"))
         {
-            Node->SetPositionFloat(pos.X, pos.Y);
+            Node->X = pos.X;
+            Node->Y = pos.Y;
+            Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("X", "Y") || ImGui.IsItemActive();
@@ -64,10 +66,11 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Size:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}size", ref size))
+        if (ImGui.DragFloat2($"##{this.NodePtr:X}size", ref size, 1, 0, default, "%.0f"))
         {
-            Node->SetWidth((ushort)Math.Max(size.X, 0));
-            Node->SetHeight((ushort)Math.Max(size.Y, 0));
+            Node->Width = (ushort)Math.Max(size.X, 0);
+            Node->Height = (ushort)Math.Max(size.Y, 0);
+            Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("Width", "Height") || ImGui.IsItemActive();
@@ -79,7 +82,8 @@ public unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{this.NodePtr:X}scale", ref scale, 0.05f))
         {
-            Node->SetScale(scale.X, scale.Y);
+            Node->ScaleX = scale.X;
+            Node->ScaleY = scale.Y;
             Node->DrawFlags |= 0xD;
         }
 
@@ -90,7 +94,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Origin:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}origin", ref origin, 1))
+        if (ImGui.DragFloat2($"##{this.NodePtr:X}origin", ref origin, 1, default, default, "%.0f"))
         {
             Node->OriginX = origin.X;
             Node->OriginY = origin.Y;
@@ -109,7 +113,7 @@ public unsafe partial class ResNodeTree
             angle -= 360;
         }
 
-        if (ImGui.DragFloat($"##{this.NodePtr:X}rotation", ref angle))
+        if (ImGui.DragFloat($"##{this.NodePtr:X}rotation", ref angle, 0.05f, default, default, "%.2f°"))
         {
             Node->Rotation = (float)(angle / (180 / Math.PI));
             Node->DrawFlags |= 0xD;
@@ -343,7 +347,7 @@ internal unsafe partial class TextNodeTree
         ImGui.TableNextColumn();
         if (InputAlignment($"##{this.NodePtr:X}alignment", ref alignment))
         {
-            TxtNode->SetAlignment(alignment);
+            TxtNode->AlignmentType = alignment;
         }
 
         ImGui.TableNextRow();
