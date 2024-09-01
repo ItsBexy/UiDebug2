@@ -27,28 +27,28 @@ internal unsafe partial class NineGridNodeTree : ImageNodeTree
     private NineGridOffsets Offsets => new(this.NgNode);
 
     /// <inheritdoc/>
-    internal override void DrawPartOutline(uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
+    internal override void DrawPartOutline(
+        uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
     {
-        var savePos = ImGui.GetCursorPos();
-        var part = PartsList->Parts[partId];
+        var part = this.TexData.PartsList->Parts[partId];
 
-        var hrFactor = this.HiRes ? 2f : 1f;
+        var hrFactor = this.TexData.HiRes ? 2f : 1f;
         var uv = new Vector2(part.U, part.V) * hrFactor;
         var wh = new Vector2(part.Width, part.Height) * hrFactor;
-
-        var adjustedOffsets = this.Offsets * hrFactor;
-
         var partBegin = originPos + uv;
         var partEnd = originPos + uv + wh;
 
-        var ngBegin1 = partBegin with { X = partBegin.X + adjustedOffsets.Left };
-        var ngEnd1 = partEnd with { X = partEnd.X - adjustedOffsets.Right };
-
-        var ngBegin2 = partBegin with { Y = partBegin.Y + adjustedOffsets.Top };
-        var ngEnd2 = partEnd with { Y = partEnd.Y - adjustedOffsets.Bottom };
+        var savePos = ImGui.GetCursorPos();
 
         if (!reqHover || ImGui.IsMouseHoveringRect(partBegin, partEnd))
         {
+            var adjustedOffsets = this.Offsets * hrFactor;
+            var ngBegin1 = partBegin with { X = partBegin.X + adjustedOffsets.Left };
+            var ngEnd1 = partEnd with { X = partEnd.X - adjustedOffsets.Right };
+
+            var ngBegin2 = partBegin with { Y = partBegin.Y + adjustedOffsets.Top };
+            var ngEnd2 = partEnd with { Y = partEnd.Y - adjustedOffsets.Bottom };
+
             var ngCol = RgbaVector4ToUint(col with { W = 0.75f * col.W });
 
             ImGui.GetWindowDrawList()
