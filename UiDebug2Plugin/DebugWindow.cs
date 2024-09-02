@@ -20,7 +20,10 @@ internal class DebugWindow : Window, IDisposable
         this.uiDebug = panel;
     }
 
-    public override void Draw() => this.uiDebug.Draw();
+    public override void Draw()
+    {
+        this.uiDebug.Draw();
+    }
 
     public void Dispose()
     {

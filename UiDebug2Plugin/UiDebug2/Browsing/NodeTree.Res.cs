@@ -140,7 +140,7 @@ internal unsafe partial class ResNodeTree : IDisposable
         }
     }
 
-    private protected virtual void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected virtual void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
     }
 

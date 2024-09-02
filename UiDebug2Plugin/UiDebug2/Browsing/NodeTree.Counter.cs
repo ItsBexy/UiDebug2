@@ -16,9 +16,9 @@ internal unsafe partial class CounterNodeTree : ResNodeTree
 
     private protected override void PrintNodeObject() => ShowStruct(this.CntNode);
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
-        if (!editorOpen)
+        if (!isEditorOpen)
         {
             PrintFieldValuePairs(("Text", ((AtkCounterNode*)this.Node)->NodeText.ToString()));
         }

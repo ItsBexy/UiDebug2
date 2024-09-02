@@ -19,5 +19,5 @@ internal unsafe class ClippingMaskNodeTree : ImageNodeTree
 
     private protected override void PrintNodeObject() => ShowStruct(this.CmNode);
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false) => this.DrawTextureAndParts();
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false) => this.DrawTextureAndParts();
 }

@@ -104,7 +104,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
     private protected override void PrintNodeObject() => ShowStruct(this.ImgNode);
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         PrintFieldValuePairs(
             ("Wrap", $"{ImgNode->WrapMode}"),

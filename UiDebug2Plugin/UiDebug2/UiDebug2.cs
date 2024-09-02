@@ -7,7 +7,6 @@ using ImGuiNET;
 using UiDebug2.Browsing;
 
 using static ImGuiNET.ImGuiWindowFlags;
-using static UiDebug2.UiDebug2Plugin;
 
 namespace UiDebug2;
 
@@ -16,15 +15,12 @@ internal partial class UiDebug2 : IDisposable
 {
     private readonly ElementSelector elementSelector;
 
-    internal UiDebug2(IGameGui gameGui, IPluginLog pluginLog)
+    internal UiDebug2(IPluginLog pluginLog, IGameGui gameGui)
     {
         this.elementSelector = new(this);
 
         GameGui = gameGui;
-
         Log = pluginLog;
-
-        PluginInterface.UiBuilder.Draw += DrawPopouts;
     }
 
     internal static IPluginLog Log { get; set; } = null!;
@@ -45,35 +41,40 @@ internal partial class UiDebug2 : IDisposable
         }
 
         AddonTrees.Clear();
-        PluginInterface.UiBuilder.Draw -= DrawPopouts;
         PopoutWindows.RemoveAllWindows();
         this.elementSelector.Dispose();
     }
 
     internal void Draw()
     {
+        PopoutWindows.Draw();
         this.DrawSidebar();
         this.DrawMainPanel();
     }
-
-    private static void DrawPopouts() => PopoutWindows.Draw();
 
     private void DrawMainPanel()
     {
         ImGui.SameLine();
         ImGui.BeginChild("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar);
 
-        if (this.SelectedAddonName != null)
+        if (this.elementSelector.Active)
         {
-            var addonTree = AddonTree.GetOrCreate(this.SelectedAddonName);
-
-            if (addonTree == null)
+            this.elementSelector.DrawSelectorFrame();
+        }
+        else
+        {
+            if (this.SelectedAddonName != null)
             {
-                this.SelectedAddonName = null;
-                return;
-            }
+                var addonTree = AddonTree.GetOrCreate(this.SelectedAddonName);
 
-            addonTree.Draw();
+                if (addonTree == null)
+                {
+                    this.SelectedAddonName = null;
+                    return;
+                }
+
+                addonTree.Draw();
+            }
         }
 
         ImGui.EndChild();

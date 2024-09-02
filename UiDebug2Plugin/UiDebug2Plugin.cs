@@ -19,7 +19,7 @@ internal sealed class UiDebug2Plugin : IDalamudPlugin
 
         PluginInterface.Create<Service>();
 
-        this.UiDebug2 = new(GameGui, Log);
+        this.UiDebug2 = new(Log, GameGui);
         this.DebugWindow = new(this.UiDebug2);
 
         WindowSystem.AddWindow(this.DebugWindow);
@@ -32,11 +32,11 @@ internal sealed class UiDebug2Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenMainUi += this.ToggleMainUI;
     }
 
-    internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
-
     internal DebugWindow DebugWindow { get; init; }
 
     internal UiDebug2 UiDebug2 { get; init; }
+
+    private static IDalamudPluginInterface PluginInterface { get; set; } = null!;
 
     public static void DrawUI() => WindowSystem.Draw();
 

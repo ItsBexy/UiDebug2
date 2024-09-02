@@ -28,9 +28,9 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
     private protected override void PrintNodeObject() => ShowStruct(this.TxtNode);
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
-        if (editorOpen)
+        if (isEditorOpen)
         {
             return;
         }

@@ -5,14 +5,14 @@ using System.Linq;
 using System.Numerics;
 
 using Dalamud.Interface.Components;
+
 using FFXIVClientStructs.FFXIV.Component.GUI;
+
 using ImGuiNET;
-using ImGuiScene;
 using UiDebug2.Browsing;
 using UiDebug2.Utility;
 
 using static System.Globalization.NumberFormatInfo;
-using static System.Reflection.BindingFlags;
 
 using static Dalamud.Interface.FontAwesomeIcon;
 using static Dalamud.Interface.UiBuilder;
@@ -21,7 +21,6 @@ using static FFXIVClientStructs.FFXIV.Component.GUI.NodeFlags;
 using static ImGuiNET.ImGuiCol;
 using static ImGuiNET.ImGuiWindowFlags;
 using static UiDebug2.UiDebug2;
-using static UiDebug2.UiDebug2Plugin;
 
 #pragma warning disable CS0659
 
@@ -34,8 +33,6 @@ internal unsafe class ElementSelector : IDisposable
     private readonly UiDebug2 uiDebug2;
 
     private string addressSearchInput = string.Empty;
-
-    private bool active;
 
     private int index;
 
@@ -50,11 +47,11 @@ internal unsafe class ElementSelector : IDisposable
 
     internal static bool Scrolled { get; set; }
 
-    private static RawDX11Scene.BuildUIDelegate? OriginalHandler { get; set; }
+    internal bool Active { get; set; }
 
     public void Dispose()
     {
-        FreeExclusiveDraw();
+        this.Active = false;
     }
 
     internal void DrawInterface()
@@ -62,17 +59,10 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.BeginChild("###sidebar_elementSelector", new(250, 0), true);
 
         ImGui.PushFont(IconFont);
-        ImGui.PushStyleColor(Text, this.active ? new Vector4(1, 1, 0.2f, 1) : new(1));
+        ImGui.PushStyleColor(Text, this.Active ? new Vector4(1, 1, 0.2f, 1) : new(1));
         if (ImGui.Button($"{(char)ObjectUngroup}"))
         {
-            this.active = !this.active;
-            PluginInterface.UiBuilder.Draw -= this.DrawSelectorOverlay;
-            FreeExclusiveDraw();
-
-            if (this.active)
-            {
-                SetExclusiveDraw(this.DrawSelectorOverlay);
-            }
+            this.Active = !this.Active;
         }
 
         if (Countdown > 0)
@@ -105,116 +95,102 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.EndChild();
     }
 
-    private static void SetExclusiveDraw(Action action)
+    internal void DrawSelectorFrame()
     {
-        // Possibly the most cursed shit I've ever done.
-        if (OriginalHandler != null)
+        ImGui.GetIO().WantCaptureKeyboard = true;
+        ImGui.GetIO().WantCaptureMouse = true;
+        ImGui.GetIO().WantTextInput = true;
+        if (ImGui.IsKeyPressed(ImGuiKey.Escape))
         {
+            this.Active = false;
             return;
         }
 
-        try
+        ImGui.Text("ELEMENT SELECTOR");
+        ImGui.TextDisabled("Use the mouse to hover and identify UI elements, then click to jump to them in the inspector");
+        ImGui.TextDisabled("Use the scrollwheel to choose between overlapping elements");
+        ImGui.TextDisabled("Press ESCAPE to cancel");
+        ImGui.Spacing();
+
+        var mousePos = ImGui.GetMousePos() - MainViewport.Pos;
+        var addonResults = GetAtkUnitBaseAtPosition(mousePos);
+
+        ImGui.PushStyleColor(WindowBg, new Vector4(0.5f));
+        ImGui.BeginChild("noClick", new(800, 2000), false, NoInputs | NoBackground | NoScrollWithMouse);
+        ImGui.BeginGroup();
+
+        Gui.PrintFieldValuePair("Mouse Position", $"{mousePos.X}, {mousePos.Y}");
+        ImGui.Spacing();
+        ImGui.Text("RESULTS:\n");
+
+        var i = 0;
+        foreach (var a in addonResults)
         {
-            var dalamudAssembly = PluginInterface.GetType().Assembly;
-            var service1T = dalamudAssembly.GetType("Dalamud.Service`1");
-            var interfaceManagerT = dalamudAssembly.GetType("Dalamud.Interface.Internal.InterfaceManager");
-            if (service1T == null)
+            var name = a.Addon->NameString;
+            ImGui.Text($"[Addon] {name}");
+            ImGui.Indent(15);
+            foreach (var n in a.Nodes)
             {
-                return;
+                var nSelected = i++ == this.index;
+
+                PrintNodeHeaderOnly(n.Node, nSelected, a.Addon);
+
+                if (nSelected && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+                {
+                    this.Active = false;
+
+                    this.uiDebug2.SelectedAddonName = a.Addon->NameString;
+
+                    var ptrList = new List<nint> { (nint)n.Node };
+
+                    var nextNode = n.Node->ParentNode;
+                    while (nextNode != null)
+                    {
+                        ptrList.Add((nint)nextNode);
+                        nextNode = nextNode->ParentNode;
+                    }
+
+                    SearchResults = ptrList.ToArray();
+                    Countdown = 100;
+                    Scrolled = false;
+                }
+
+                if (nSelected)
+                {
+                    n.NodeBounds.DrawFilled(new(1, 1, 0.2f, 1));
+                }
             }
 
-            if (interfaceManagerT == null)
-            {
-                return;
-            }
-
-            var serviceInterfaceManager = service1T.MakeGenericType(interfaceManagerT);
-            var getter = serviceInterfaceManager.GetMethod("Get", Static | Public);
-            if (getter == null)
-            {
-                return;
-            }
-
-            var interfaceManager = getter.Invoke(null, null);
-            if (interfaceManager == null)
-            {
-                return;
-            }
-
-            var ef = interfaceManagerT.GetField("Draw", Instance | NonPublic);
-            if (ef == null)
-            {
-                return;
-            }
-
-            if (ef.GetValue(interfaceManager) is not RawDX11Scene.BuildUIDelegate handler)
-            {
-                return;
-            }
-
-            OriginalHandler = handler;
-            ef.SetValue(interfaceManager, new RawDX11Scene.BuildUIDelegate(action));
+            ImGui.Indent(-15);
         }
-        catch (Exception ex)
+
+        if (i != 0)
         {
-            Log.Fatal($"{ex}");
+            this.index -= (int)ImGui.GetIO().MouseWheel;
+            while (this.index < 0)
+            {
+                this.index += i;
+            }
+
+            while (this.index >= i)
+            {
+                this.index -= i;
+            }
         }
+
+        ImGui.EndGroup();
+        ImGui.EndChild();
+        ImGui.PopStyleColor();
     }
 
-    private static void FreeExclusiveDraw()
-    {
-        if (OriginalHandler == null)
-        {
-            return;
-        }
-
-        try
-        {
-            var dalamudAssembly = PluginInterface.GetType().Assembly;
-            var service1T = dalamudAssembly.GetType("Dalamud.Service`1");
-            var interfaceManagerT = dalamudAssembly.GetType("Dalamud.Interface.Internal.InterfaceManager");
-            if (service1T == null)
-            {
-                return;
-            }
-
-            if (interfaceManagerT == null)
-            {
-                return;
-            }
-
-            var serviceInterfaceManager = service1T.MakeGenericType(interfaceManagerT);
-            var getter = serviceInterfaceManager.GetMethod("Get", Static | Public);
-            if (getter == null)
-            {
-                return;
-            }
-
-            var interfaceManager = getter.Invoke(null, null);
-            if (interfaceManager == null)
-            {
-                return;
-            }
-
-            var ef = interfaceManagerT.GetField("Draw", Instance | NonPublic);
-            if (ef == null)
-            {
-                return;
-            }
-
-            ef.SetValue(interfaceManager, OriginalHandler);
-            OriginalHandler = null;
-        }
-        catch (Exception ex)
-        {
-            Log.Fatal($"{ex}");
-        }
-    }
-
-    private static IEnumerable<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position)
+    private static List<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position)
     {
         var addonResults = new List<AddonResult>();
         var unitListBaseAddr = GetUnitListBaseAddr();
+        if (unitListBaseAddr == null)
+        {
+            return addonResults;
+        }
 
         foreach (var unit in UnitListOptions)
         {
@@ -236,7 +212,7 @@ internal unsafe class ElementSelector : IDisposable
                     continue;
                 }
 
-                var addonResult = new AddonResult { Addon = addon, Nodes = new() };
+                var addonResult = new AddonResult(addon, new());
 
                 if (addonResults.Contains(addonResult))
                 {
@@ -263,10 +239,10 @@ internal unsafe class ElementSelector : IDisposable
             }
         }
 
-        return addonResults.OrderBy(static w => w.Addon->GetScaledWidth(true) * w.Addon->GetScaledHeight(true));
+        return addonResults.OrderBy(static w => w.Area).ToList();
     }
 
-    private static IEnumerable<NodeResult> GetNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool reverse)
+    private static List<NodeResult> GetNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool reverse)
     {
         var nodeResults = new List<NodeResult>();
         for (var i = 0; i < uldManager->NodeListCount; i++)
@@ -387,110 +363,13 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.PopStyleColor();
     }
 
-    private void DrawSelectorOverlay()
-    {
-        ImGui.GetIO().WantCaptureKeyboard = true;
-        ImGui.GetIO().WantCaptureMouse = true;
-        ImGui.GetIO().WantTextInput = true;
-        if (ImGui.IsKeyPressed(ImGuiKey.Escape))
-        {
-            this.active = false;
-            FreeExclusiveDraw();
-            return;
-        }
-
-        SetNextWindowPosRelativeMainViewport(Vector2.Zero);
-        ImGui.SetNextWindowSize(ImGui.GetIO().DisplaySize);
-        ImGui.SetNextWindowBgAlpha(0.3f);
-        ForceNextWindowMainViewport();
-
-        ImGui.Begin("ElementSelectorWindow", NoDecoration | NoScrollWithMouse | NoScrollbar);
-        var drawList = ImGui.GetWindowDrawList();
-
-        var y = 100f;
-        foreach (var s in new[] { "Select an Element", "Press ESCAPE to cancel" })
-        {
-            var size = ImGui.CalcTextSize(s);
-            var x = (ImGui.GetWindowWidth() / 2f) - (size.X / 2);
-            drawList.AddText(new(x, y), Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(new(1)), s);
-
-            y += size.Y;
-        }
-
-        var mousePos = ImGui.GetMousePos() - MainViewport.Pos;
-        var addonResults = GetAtkUnitBaseAtPosition(mousePos);
-
-        ImGui.SetCursorPosX(100);
-        ImGui.SetCursorPosY(100);
-        ImGui.BeginChild("noClick", new(800, 2000), false, NoInputs | NoBackground | NoScrollWithMouse);
-        ImGui.BeginGroup();
-
-        ImGui.Text($"Mouse Position: {mousePos.X}, {mousePos.Y}\n");
-        var i = 0;
-
-        foreach (var a in addonResults)
-        {
-            var name = a.Addon->NameString;
-            ImGui.Text($"[Addon] {name}");
-            ImGui.Indent(15);
-            foreach (var n in a.Nodes)
-            {
-                var nSelected = i++ == this.index;
-
-                PrintNodeHeaderOnly(n.Node, nSelected, a.Addon);
-
-                if (nSelected && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-                {
-                    this.active = false;
-                    FreeExclusiveDraw();
-
-                    this.uiDebug2.SelectedAddonName = a.Addon->NameString;
-
-                    var ptrList = new List<nint> { (nint)n.Node };
-
-                    var nextNode = n.Node->ParentNode;
-                    while (nextNode != null)
-                    {
-                        ptrList.Add((nint)nextNode);
-                        nextNode = nextNode->ParentNode;
-                    }
-
-                    SearchResults = ptrList.ToArray();
-                    Countdown = 100;
-                    Scrolled = false;
-                }
-
-                if (nSelected)
-                {
-                    n.NodeBounds.DrawFilled(new(1, 1, 0.2f, 1));
-                }
-            }
-
-            ImGui.Indent(-15);
-        }
-
-        if (i != 0)
-        {
-            this.index -= (int)ImGui.GetIO().MouseWheel;
-            while (this.index < 0)
-            {
-                this.index += i;
-            }
-
-            while (this.index >= i)
-            {
-                this.index -= i;
-            }
-        }
-
-        ImGui.EndGroup();
-        ImGui.EndChild();
-        ImGui.End();
-    }
-
     private void PerformSearch(nint address)
     {
         var unitListBaseAddr = GetUnitListBaseAddr();
+        if (unitListBaseAddr == null)
+        {
+            return;
+        }
 
         for (var i = 0; i < UnitListCount; i++)
         {
@@ -513,6 +392,15 @@ internal unsafe class ElementSelector : IDisposable
     {
         internal AtkUnitBase* Addon;
         internal List<NodeResult> Nodes;
+        internal float Area;
+
+        public AddonResult(AtkUnitBase* addon, List<NodeResult> nodes)
+        {
+            this.Addon = addon;
+            this.Nodes = nodes;
+            var rootNode = addon->RootNode;
+            this.Area = rootNode != null ? rootNode->Width * rootNode->Height * rootNode->ScaleY * rootNode->ScaleX : 0;
+        }
 
         public override readonly bool Equals(object? obj)
         {

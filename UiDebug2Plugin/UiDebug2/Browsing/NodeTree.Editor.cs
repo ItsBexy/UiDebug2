@@ -22,7 +22,7 @@ internal unsafe partial class ResNodeTree
 {
     private protected void DrawNodeEditorTable()
     {
-        ImGui.BeginTable($"##Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX | PadOuterX);
+        ImGui.BeginTable($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX);
 
         this.DrawEditorRows();
 

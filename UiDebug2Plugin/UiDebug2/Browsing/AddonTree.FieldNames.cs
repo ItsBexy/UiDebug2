@@ -44,9 +44,9 @@ public unsafe partial class AddonTree
                         break;
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    Log.Error($"{ex}");
+                    // ignored
                 }
             }
         }

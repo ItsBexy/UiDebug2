@@ -62,22 +62,33 @@ public unsafe partial class AddonTree : IDisposable
             return null;
         }
 
-        var ptr = GameGui.GetAddonByName(name);
-
-        if (AddonTrees.TryGetValue(name, out var tree))
+        try
         {
-            if (tree.initialPtr == ptr)
-            {
-                return tree;
-            }
+            var ptr = GameGui.GetAddonByName(name);
 
-            tree.Dispose();
-            return null;
+            if ((AtkUnitBase*)ptr != null)
+            {
+                if (AddonTrees.TryGetValue(name, out var tree))
+                {
+                    if (tree.initialPtr == ptr)
+                    {
+                        return tree;
+                    }
+
+                    tree.Dispose();
+                }
+
+                var newTree = new AddonTree(name, ptr);
+                AddonTrees.Add(name, newTree);
+                return newTree;
+            }
+        }
+        catch
+        {
+            Log.Warning("Couldn't get addon!");
         }
 
-        var newTree = new AddonTree(name, ptr);
-        AddonTrees.Add(name, newTree);
-        return newTree;
+        return null;
     }
 
     internal void Draw()
@@ -144,6 +155,7 @@ public unsafe partial class AddonTree : IDisposable
 
         ImGui.Dummy(new(25 * ImGui.GetIO().FontGlobalScale));
         ImGui.Separator();
+
         ResNodeTree.PrintNodeListAsTree(addon->CollisionNodeList, (int)addon->CollisionNodeListCount, "Collision List", this, new(0.5F, 0.7F, 1F, 1F));
 
         if (SearchResults.Length > 0 && Countdown <= 0)

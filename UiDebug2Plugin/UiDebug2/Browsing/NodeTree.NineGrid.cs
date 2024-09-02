@@ -62,9 +62,9 @@ internal unsafe partial class NineGridNodeTree : ImageNodeTree
 
     private protected override void PrintNodeObject() => ShowStruct(this.NgNode);
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
-        if (!editorOpen)
+        if (!isEditorOpen)
         {
             ImGui.Text("NineGrid Offsets:\t");
             ImGui.SameLine();

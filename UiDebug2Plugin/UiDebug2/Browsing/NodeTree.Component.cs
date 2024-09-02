@@ -56,7 +56,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         this.PrintFieldName((nint)this.component, new(0f, 0.5f, 0.8f, 1f));
     }
 
-    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         if (this.component == null)
         {
