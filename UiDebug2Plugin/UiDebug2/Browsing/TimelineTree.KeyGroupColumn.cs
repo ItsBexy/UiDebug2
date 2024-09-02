@@ -32,20 +32,16 @@ public partial struct TimelineTree
             this.Width = 50;
         }
 
-        /// <inheritdoc/>
         public string Name { get; set; }
 
-        /// <inheritdoc/>
         public float Width { get; init; }
 
-        /// <inheritdoc/>
         public readonly int Count => this.Values.Count;
 
         public static void PlainTextCell(T value) => ImGui.Text($"{value}");
 
         public readonly void Add(T val) => this.Values.Add(val);
 
-        /// <inheritdoc/>
         public readonly void PrintValueAt(int i)
         {
             if (this.Values.Count > i)

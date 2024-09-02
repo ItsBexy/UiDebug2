@@ -11,6 +11,5 @@ internal unsafe class CollisionNodeTree : ResNodeTree
     {
     }
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject() => ShowStruct((AtkCollisionNode*)this.Node);
+    private protected override void PrintNodeObject() => ShowStruct((AtkCollisionNode*)this.Node);
 }

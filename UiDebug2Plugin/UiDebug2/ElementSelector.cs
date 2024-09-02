@@ -29,6 +29,8 @@ namespace UiDebug2;
 
 internal unsafe class ElementSelector : IDisposable
 {
+    internal const int UnitListCount = 18;
+
     private readonly UiDebug2 uiDebug2;
 
     private string addressSearchInput = string.Empty;
@@ -44,18 +46,66 @@ internal unsafe class ElementSelector : IDisposable
 
     internal static nint[] SearchResults { get; set; } = Array.Empty<nint>();
 
-    internal static RawDX11Scene.BuildUIDelegate? OriginalHandler { get; set; }
-
     internal static float Countdown { get; set; }
 
     internal static bool Scrolled { get; set; }
+
+    private static RawDX11Scene.BuildUIDelegate? OriginalHandler { get; set; }
 
     public void Dispose()
     {
         FreeExclusiveDraw();
     }
 
-    internal static void SetExclusiveDraw(Action action)
+    internal void DrawInterface()
+    {
+        ImGui.BeginChild("###sidebar_elementSelector", new(250, 0), true);
+
+        ImGui.PushFont(IconFont);
+        ImGui.PushStyleColor(Text, this.active ? new Vector4(1, 1, 0.2f, 1) : new(1));
+        if (ImGui.Button($"{(char)ObjectUngroup}"))
+        {
+            this.active = !this.active;
+            PluginInterface.UiBuilder.Draw -= this.DrawSelectorOverlay;
+            FreeExclusiveDraw();
+
+            if (this.active)
+            {
+                SetExclusiveDraw(this.DrawSelectorOverlay);
+            }
+        }
+
+        if (Countdown > 0)
+        {
+            Countdown -= 1;
+            if (Countdown < 0)
+            {
+                Countdown = 0;
+            }
+        }
+
+        ImGui.PopStyleColor();
+        ImGui.PopFont();
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Element Selector");
+        }
+
+        ImGui.SameLine();
+
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 32);
+        ImGui.InputTextWithHint("###addressSearchInput", "Address Search", ref this.addressSearchInput, 18, ImGuiInputTextFlags.AutoSelectAll);
+        ImGui.SameLine();
+
+        if (ImGuiComponents.IconButton("###elemSelectorAddrSearch", Search) && nint.TryParse(this.addressSearchInput, NumberStyles.HexNumber | NumberStyles.AllowHexSpecifier, InvariantInfo, out var address))
+        {
+            this.PerformSearch(address);
+        }
+
+        ImGui.EndChild();
+    }
+
+    private static void SetExclusiveDraw(Action action)
     {
         // Possibly the most cursed shit I've ever done.
         if (OriginalHandler != null)
@@ -111,7 +161,7 @@ internal unsafe class ElementSelector : IDisposable
         }
     }
 
-    internal static void FreeExclusiveDraw()
+    private static void FreeExclusiveDraw()
     {
         if (OriginalHandler == null)
         {
@@ -161,10 +211,10 @@ internal unsafe class ElementSelector : IDisposable
         }
     }
 
-    internal static IEnumerable<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position)
+    private static IEnumerable<AddonResult> GetAtkUnitBaseAtPosition(Vector2 position)
     {
         var addonResults = new List<AddonResult>();
-        var unitListBaseAddr = &AtkStage.Instance()->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
+        var unitListBaseAddr = GetUnitListBaseAddr();
 
         foreach (var unit in UnitListOptions)
         {
@@ -216,7 +266,7 @@ internal unsafe class ElementSelector : IDisposable
         return addonResults.OrderBy(static w => w.Addon->GetScaledWidth(true) * w.Addon->GetScaledHeight(true));
     }
 
-    internal static IEnumerable<NodeResult> GetNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool reverse)
+    private static IEnumerable<NodeResult> GetNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool reverse)
     {
         var nodeResults = new List<NodeResult>();
         for (var i = 0; i < uldManager->NodeListCount; i++)
@@ -247,7 +297,7 @@ internal unsafe class ElementSelector : IDisposable
         return nodeResults;
     }
 
-    internal static bool FindByAddress(AtkUnitBase* atkUnitBase, nint address)
+    private static bool FindByAddress(AtkUnitBase* atkUnitBase, nint address)
     {
         if (atkUnitBase->RootNode == null)
         {
@@ -265,7 +315,7 @@ internal unsafe class ElementSelector : IDisposable
         return true;
     }
 
-    internal static bool FindByAddress(AtkResNode* node, nint address, out List<nint>? path)
+    private static bool FindByAddress(AtkResNode* node, nint address, out List<nint>? path)
     {
         if (node == null)
         {
@@ -314,7 +364,7 @@ internal unsafe class ElementSelector : IDisposable
         return false;
     }
 
-    internal static void PrintNodeHeaderOnly(AtkResNode* node, bool selected, AtkUnitBase* addon)
+    private static void PrintNodeHeaderOnly(AtkResNode* node, bool selected, AtkUnitBase* addon)
     {
         if (addon == null)
         {
@@ -337,7 +387,7 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.PopStyleColor();
     }
 
-    internal void Draw()
+    private void DrawSelectorOverlay()
     {
         ImGui.GetIO().WantCaptureKeyboard = true;
         ImGui.GetIO().WantCaptureMouse = true;
@@ -438,11 +488,9 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.End();
     }
 
-    internal void PerformSearch(nint address)
+    private void PerformSearch(nint address)
     {
-        var stage = AtkStage.Instance();
-
-        var unitListBaseAddr = &stage->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
+        var unitListBaseAddr = GetUnitListBaseAddr();
 
         for (var i = 0; i < UnitListCount; i++)
         {
@@ -461,60 +509,11 @@ internal unsafe class ElementSelector : IDisposable
         }
     }
 
-    internal void DrawInterface()
-    {
-        ImGui.BeginChild("###sidebar_elementSelector", new(250, 0), true);
-
-        ImGui.PushFont(IconFont);
-        ImGui.PushStyleColor(Text, this.active ? new Vector4(1, 1, 0.2f, 1) : new(1));
-        if (ImGui.Button($"{(char)ObjectUngroup}"))
-        {
-            this.active = !this.active;
-            PluginInterface.UiBuilder.Draw -= this.Draw;
-            FreeExclusiveDraw();
-
-            if (this.active)
-            {
-                SetExclusiveDraw(this.Draw);
-            }
-        }
-
-        if (Countdown > 0)
-        {
-            Countdown -= 1;
-            if (Countdown < 0)
-            {
-                Countdown = 0;
-            }
-        }
-
-        ImGui.PopStyleColor();
-        ImGui.PopFont();
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Element Selector");
-        }
-
-        ImGui.SameLine();
-
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 32);
-        ImGui.InputTextWithHint("###addressSearchInput", "Address Search", ref this.addressSearchInput, 18, ImGuiInputTextFlags.AutoSelectAll);
-        ImGui.SameLine();
-
-        if (ImGuiComponents.IconButton("###elemSelectorAddrSearch", Search) && nint.TryParse(this.addressSearchInput, NumberStyles.HexNumber | NumberStyles.AllowHexSpecifier, InvariantInfo, out var address))
-        {
-            this.PerformSearch(address);
-        }
-
-        ImGui.EndChild();
-    }
-
     internal struct AddonResult
     {
         internal AtkUnitBase* Addon;
         internal List<NodeResult> Nodes;
 
-        /// <inheritdoc/>
         public override readonly bool Equals(object? obj)
         {
             if (obj is not AddonResult ar)
@@ -531,7 +530,6 @@ internal unsafe class ElementSelector : IDisposable
         internal AtkResNode* Node;
         internal NodeBounds NodeBounds;
 
-        /// <inheritdoc/>
         public override readonly bool Equals(object? obj)
         {
             if (obj is not NodeResult nr)

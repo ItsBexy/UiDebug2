@@ -24,16 +24,15 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         this.uldManager = &component->UldManager;
         this.NodeType = 0;
         this.componentType = ((AtkUldComponentInfo*)uldManager->Objects)->ComponentType;
-
-        var children = uldManager->NodeListCount;
-        this.TypeString = $"{this.componentType} Component Node" + (children > 0 ? $" [+{children}]" : string.Empty);
-        this.PointerString = $"(Node: {(long)node:X} / Comp: {(long)this.component:X})";
     }
 
-    internal nint CompPtr => (nint)this.component;
+    private protected override string GetHeaderText()
+    {
+        var childCount = (int)this.uldManager->NodeListCount;
+        return $"{this.componentType} Component Node{(childCount > 0 ? $" [+{childCount}]" : string.Empty)} (Node: {(nint)this.Node:X} / Comp: {(nint)this.component:X})";
+    }
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject()
+    private protected override void PrintNodeObject()
     {
         base.PrintNodeObject();
         this.PrintComponentObject();
@@ -44,24 +43,62 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         ImGui.NewLine();
     }
 
-    /// <inheritdoc/>
-    internal override void PrintChildNodes()
+    private protected override void PrintChildNodes()
     {
         base.PrintChildNodes();
         var count = this.uldManager->NodeListCount;
         PrintNodeListAsTree(this.uldManager->NodeList, count, $"Node List [{count}]:", this.AddonTree, new(0f, 0.5f, 0.8f, 1f));
     }
 
-    /// <inheritdoc/>
-    internal override void PrintFieldNames()
+    private protected override void PrintFieldNames()
     {
-        this.PrintFieldName(this.NodePtr, new(0, 0.85F, 1, 1));
-        this.PrintFieldName(this.CompPtr, new(0f, 0.5f, 0.8f, 1f));
+        this.PrintFieldName((nint)this.Node, new(0, 0.85F, 1, 1));
+        this.PrintFieldName((nint)this.component, new(0f, 0.5f, 0.8f, 1f));
     }
 
-    internal void PrintComponentObject()
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
     {
-        PrintFieldValuePair("Component", $"{this.CompPtr:X}");
+        if (this.component == null)
+        {
+            return;
+        }
+
+        switch (this.componentType)
+        {
+            case TextInput:
+                var textInputComponent = (AtkComponentTextInput*)this.component;
+                ImGui.Text(
+                    $"InputBase Text1: {Marshal.PtrToStringAnsi(new(textInputComponent->AtkComponentInputBase.UnkText1.StringPtr))}");
+                ImGui.Text(
+                    $"InputBase Text2: {Marshal.PtrToStringAnsi(new(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
+                ImGui.Text(
+                    $"Text1: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText01.StringPtr))}");
+                ImGui.Text(
+                    $"Text2: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText02.StringPtr))}");
+                ImGui.Text(
+                    $"Text3: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText03.StringPtr))}");
+                ImGui.Text(
+                    $"Text4: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText04.StringPtr))}");
+                ImGui.Text(
+                    $"Text5: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText05.StringPtr))}");
+                break;
+            case List:
+            case TreeList:
+                var l = (AtkComponentList*)this.component;
+                if (ImGui.SmallButton("Inc.Selected"))
+                {
+                    l->SelectedItemIndex++;
+                }
+
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void PrintComponentObject()
+    {
+        PrintFieldValuePair("Component", $"{(nint)this.component:X}");
 
         ImGui.SameLine();
 
@@ -136,7 +173,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         }
     }
 
-    internal void PrintComponentDataObject()
+    private void PrintComponentDataObject()
     {
         var componentData = component->UldManager.ComponentData;
         PrintFieldValuePair("Data", $"{(nint)componentData:X}");
@@ -228,47 +265,6 @@ internal unsafe class ComponentNodeTree : ResNodeTree
                     ShowStruct(componentData);
                     break;
             }
-        }
-    }
-
-    /// <inheritdoc/>
-    internal override void PrintFieldsForNodeType(bool editorOpen = false)
-    {
-        if (this.component == null)
-        {
-            return;
-        }
-
-        switch (this.componentType)
-        {
-            case TextInput:
-                var textInputComponent = (AtkComponentTextInput*)this.component;
-                ImGui.Text(
-                    $"InputBase Text1: {Marshal.PtrToStringAnsi(new(textInputComponent->AtkComponentInputBase.UnkText1.StringPtr))}");
-                ImGui.Text(
-                    $"InputBase Text2: {Marshal.PtrToStringAnsi(new(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
-                ImGui.Text(
-                    $"Text1: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText01.StringPtr))}");
-                ImGui.Text(
-                    $"Text2: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText02.StringPtr))}");
-                ImGui.Text(
-                    $"Text3: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText03.StringPtr))}");
-                ImGui.Text(
-                    $"Text4: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText04.StringPtr))}");
-                ImGui.Text(
-                    $"Text5: {Marshal.PtrToStringAnsi(new(textInputComponent->UnkText05.StringPtr))}");
-                break;
-            case List:
-            case TreeList:
-                var l = (AtkComponentList*)this.component;
-                if (ImGui.SmallButton("Inc.Selected"))
-                {
-                    l->SelectedItemIndex++;
-                }
-
-                break;
-            default:
-                break;
         }
     }
 }

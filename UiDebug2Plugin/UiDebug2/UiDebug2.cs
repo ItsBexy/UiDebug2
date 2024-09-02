@@ -50,15 +50,15 @@ internal partial class UiDebug2 : IDisposable
         this.elementSelector.Dispose();
     }
 
-    internal static void DrawPopouts() => PopoutWindows.Draw();
-
     internal void Draw()
     {
         this.DrawSidebar();
         this.DrawMainPanel();
     }
 
-    internal void DrawMainPanel()
+    private static void DrawPopouts() => PopoutWindows.Draw();
+
+    private void DrawMainPanel()
     {
         ImGui.SameLine();
         ImGui.BeginChild("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar);

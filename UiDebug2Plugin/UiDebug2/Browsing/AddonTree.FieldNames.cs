@@ -18,16 +18,16 @@ public unsafe partial class AddonTree
 
     internal Dictionary<nint, List<string>> FieldNames { get; set; } = new();
 
-    internal static object? GetAddonObj(string addonName, AtkUnitBase* addon)
+    private object? GetAddonObj(AtkUnitBase* addon)
     {
         if (addon == null)
         {
             return null;
         }
 
-        if (!AddonTypeDict.ContainsKey(addonName))
+        if (!AddonTypeDict.ContainsKey(this.AddonName))
         {
-            AddonTypeDict.Add(addonName, null);
+            AddonTypeDict.Add(this.AddonName, null);
 
             foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -37,10 +37,10 @@ public unsafe partial class AddonTree
                                       where t.IsPublic
                                       let xivAddonAttr = (Addon?)t.GetCustomAttribute(typeof(Addon), false)
                                       where xivAddonAttr != null
-                                      where xivAddonAttr.AddonIdentifiers.Contains(addonName)
+                                      where xivAddonAttr.AddonIdentifiers.Contains(this.AddonName)
                                       select t)
                     {
-                        AddonTypeDict[addonName] = t;
+                        AddonTypeDict[this.AddonName] = t;
                         break;
                     }
                 }
@@ -51,13 +51,12 @@ public unsafe partial class AddonTree
             }
         }
 
-        return AddonTypeDict.TryGetValue(addonName, out var result) && result != null ? Marshal.PtrToStructure(new(addon), result) : *addon;
+        return AddonTypeDict.TryGetValue(this.AddonName, out var result) && result != null ? Marshal.PtrToStructure(new(addon), result) : *addon;
     }
 
     private void PopulateFieldNames(nint ptr)
     {
-        var addonObj = GetAddonObj(this.AddonName, (AtkUnitBase*)ptr);
-        this.PopulateFieldNames(addonObj, ptr);
+        this.PopulateFieldNames(this.GetAddonObj((AtkUnitBase*)ptr), ptr);
     }
 
     private void PopulateFieldNames(object? obj, nint baseAddr, List<string>? path = null)
@@ -74,93 +73,121 @@ public unsafe partial class AddonTree
         {
             if (field.GetCustomAttribute(typeof(FieldOffsetAttribute)) is FieldOffsetAttribute offset)
             {
-                var fieldAddr = baseAddr + offset.Value;
-                var name = field.Name[0] == '_' ? char.ToUpper(field.Name[1]) + field.Name[2..] : field.Name;
-                var fieldType = field.FieldType;
+                try
+                {
+                    var fieldAddr = baseAddr + offset.Value;
+                    var name = field.Name[0] == '_' ? char.ToUpper(field.Name[1]) + field.Name[2..] : field.Name;
+                    var fieldType = field.FieldType;
 
-                if (!field.IsStatic && fieldType.IsPointer)
-                {
-                    var pointer = (nint)Pointer.Unbox((Pointer)field.GetValue(obj)!);
-                    var itemType = fieldType.GetElementType();
-                    ParsePointer(fieldAddr, pointer, itemType, name);
+                    if (!field.IsStatic && fieldType.IsPointer)
+                    {
+                        var pointer = (nint)Pointer.Unbox((Pointer)field.GetValue(obj)!);
+                        var itemType = fieldType.GetElementType();
+                        ParsePointer(fieldAddr, pointer, itemType, name);
+                    }
+                    else if (fieldType.IsExplicitLayout)
+                    {
+                        ParseExplicitField(fieldAddr, field, fieldType, name);
+                    }
+                    else if (fieldType.Name.Contains("FixedSizeArray"))
+                    {
+                        ParseFixedSizeArray(fieldAddr, fieldType, name);
+                    }
                 }
-                else if (fieldType.IsExplicitLayout)
+                catch (Exception ex)
                 {
-                    ParseExplicitField(fieldAddr, field, fieldType, name);
-                }
-                else if (fieldType.Name.Contains("FixedSizeArray"))
-                {
-                    ParseFixedSizeArray(fieldAddr, fieldType, name);
+                    Log.Warning($"Failed to parse field at {offset.Value:X} in {baseType}!\n{ex}");
                 }
             }
         }
 
         void ParseExplicitField(nint fieldAddr, FieldInfo field, MemberInfo fieldType, string name)
         {
-            if (this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name }) && fieldType.DeclaringType == baseType)
+            try
             {
-                this.PopulateFieldNames(field.GetValue(obj), fieldAddr, new List<string>(path) { name });
+                if (this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name }) && fieldType.DeclaringType == baseType)
+                {
+                    this.PopulateFieldNames(field.GetValue(obj), fieldAddr, new List<string>(path) { name });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"Failed to parse explicit field: {fieldType} {name} in {baseType}!\n{ex}");
             }
         }
 
         void ParseFixedSizeArray(nint fieldAddr, Type fieldType, string name)
         {
-            var spanLength = (int)(fieldType.CustomAttributes.ToArray()[0].ConstructorArguments[0].Value ?? 0);
-
-            if (spanLength <= 0)
+            try
             {
-                return;
-            }
+                var spanLength = (int)(fieldType.CustomAttributes.ToArray()[0].ConstructorArguments[0].Value ?? 0);
 
-            var itemType = fieldType.UnderlyingSystemType.GenericTypeArguments[0];
-
-            if (!itemType.IsGenericType)
-            {
-                var size = Marshal.SizeOf(itemType);
-                for (var i = 0; i < spanLength; i++)
+                if (spanLength <= 0)
                 {
-                    var itemAddr = fieldAddr + (size * i);
-                    var itemName = $"{name}[{i}]";
+                    return;
+                }
 
-                    this.FieldNames.TryAdd(itemAddr, new List<string>(path) { itemName });
+                var itemType = fieldType.UnderlyingSystemType.GenericTypeArguments[0];
 
-                    var item = Marshal.PtrToStructure(itemAddr, itemType);
-                    if (itemType.DeclaringType == baseType)
+                if (!itemType.IsGenericType)
+                {
+                    var size = Marshal.SizeOf(itemType);
+                    for (var i = 0; i < spanLength; i++)
                     {
-                        this.PopulateFieldNames(item, itemAddr, new List<string>(path) { name });
+                        var itemAddr = fieldAddr + (size * i);
+                        var itemName = $"{name}[{i}]";
+
+                        this.FieldNames.TryAdd(itemAddr, new List<string>(path) { itemName });
+
+                        var item = Marshal.PtrToStructure(itemAddr, itemType);
+                        if (itemType.DeclaringType == baseType)
+                        {
+                            this.PopulateFieldNames(item, itemAddr, new List<string>(path) { name });
+                        }
+                    }
+                }
+                else if (itemType.Name.Contains("Pointer"))
+                {
+                    itemType = itemType.GenericTypeArguments[0];
+
+                    for (var i = 0; i < spanLength; i++)
+                    {
+                        var itemAddr = fieldAddr + (0x08 * i);
+                        var pointer = Marshal.ReadIntPtr(itemAddr);
+                        ParsePointer(itemAddr, pointer, itemType, $"{name}[{i}]");
                     }
                 }
             }
-            else if (itemType.Name.Contains("Pointer"))
+            catch (Exception ex)
             {
-                itemType = itemType.GenericTypeArguments[0];
-
-                for (var i = 0; i < spanLength; i++)
-                {
-                    var itemAddr = fieldAddr + (0x08 * i);
-                    var pointer = Marshal.ReadIntPtr(itemAddr);
-                    ParsePointer(itemAddr, pointer, itemType, $"{name}[{i}]");
-                }
+                Log.Warning($"Failed to parse fixed size array: {fieldType} {name} in {baseType}!\n{ex}");
             }
         }
 
         void ParsePointer(nint fieldAddr, nint pointer, Type? itemType, string name)
         {
-            if (pointer == 0)
+            try
             {
-                return;
+                if (pointer == 0)
+                {
+                    return;
+                }
+
+                this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name });
+                this.FieldNames.TryAdd(pointer, new List<string>(path) { name });
+
+                if (itemType?.DeclaringType != baseType || itemType.IsPointer)
+                {
+                    return;
+                }
+
+                var item = Marshal.PtrToStructure(pointer, itemType);
+                this.PopulateFieldNames(item, pointer, new List<string>(path) { name });
             }
-
-            this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name });
-            this.FieldNames.TryAdd(pointer, new List<string>(path) { name });
-
-            if (itemType?.DeclaringType != baseType || itemType.IsPointer)
+            catch (Exception ex)
             {
-                return;
+                Log.Warning($"Failed to parse pointer: {itemType}* {name} in {baseType}!\n{ex}");
             }
-
-            var item = Marshal.PtrToStructure(pointer, itemType);
-            this.PopulateFieldNames(item, pointer, new List<string>(path) { name });
         }
     }
 }

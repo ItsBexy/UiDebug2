@@ -18,9 +18,9 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
-public unsafe partial class ResNodeTree
+internal unsafe partial class ResNodeTree
 {
-    internal void DrawNodeEditorTable()
+    private protected void DrawNodeEditorTable()
     {
         ImGui.BeginTable($"##Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX | PadOuterX);
 
@@ -29,7 +29,7 @@ public unsafe partial class ResNodeTree
         ImGui.EndTable();
     }
 
-    protected virtual void DrawEditorRows()
+    private protected virtual void DrawEditorRows()
     {
         var pos = new Vector2(Node->X, Node->Y);
         var size = new Vector2(Node->Width, Node->Height);
@@ -52,7 +52,7 @@ public unsafe partial class ResNodeTree
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}position", ref pos, 1, default, default, "%.0f"))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}position", ref pos, 1, default, default, "%.0f"))
         {
             Node->X = pos.X;
             Node->Y = pos.Y;
@@ -66,7 +66,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Size:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}size", ref size, 1, 0, default, "%.0f"))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}size", ref size, 1, 0, default, "%.0f"))
         {
             Node->Width = (ushort)Math.Max(size.X, 0);
             Node->Height = (ushort)Math.Max(size.Y, 0);
@@ -80,7 +80,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Scale:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}scale", ref scale, 0.05f))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}scale", ref scale, 0.05f))
         {
             Node->ScaleX = scale.X;
             Node->ScaleY = scale.Y;
@@ -94,7 +94,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Origin:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}origin", ref origin, 1, default, default, "%.0f"))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}origin", ref origin, 1, default, default, "%.0f"))
         {
             Node->OriginX = origin.X;
             Node->OriginY = origin.Y;
@@ -113,7 +113,7 @@ public unsafe partial class ResNodeTree
             angle -= 360;
         }
 
-        if (ImGui.DragFloat($"##{this.NodePtr:X}rotation", ref angle, 0.05f, default, default, "%.2f°"))
+        if (ImGui.DragFloat($"##{(nint)this.Node:X}rotation", ref angle, 0.05f, default, default, "%.2f°"))
         {
             Node->Rotation = (float)(angle / (180 / Math.PI));
             Node->DrawFlags |= 0xD;
@@ -139,7 +139,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("RGBA:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.ColorEdit4($"##{this.NodePtr:X}RGBA", ref rgba, DisplayHex))
+        if (ImGui.ColorEdit4($"##{(nint)this.Node:X}RGBA", ref rgba, DisplayHex))
         {
             Node->Color = new() { RGBA = RgbaVector4ToUint(rgba) };
         }
@@ -149,7 +149,7 @@ public unsafe partial class ResNodeTree
         ImGui.Text("Multiply:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.ColorEdit3($"##{this.NodePtr:X}multiplyRGB", ref mult, DisplayHex))
+        if (ImGui.ColorEdit3($"##{(nint)this.Node:X}multiplyRGB", ref mult, DisplayHex))
         {
             Node->MultiplyRed = (byte)(mult.X * 255);
             Node->MultiplyGreen = (byte)(mult.Y * 255);
@@ -162,7 +162,7 @@ public unsafe partial class ResNodeTree
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(124);
 
-        if (ImGui.DragFloat3($"##{this.NodePtr:X}addRGB", ref add, 1, -255, 255, "%.0f"))
+        if (ImGui.DragFloat3($"##{(nint)this.Node:X}addRGB", ref add, 1, -255, 255, "%.0f"))
         {
             Node->AddRed = (short)add.X;
             Node->AddGreen = (short)add.Y;
@@ -175,7 +175,7 @@ public unsafe partial class ResNodeTree
 
         ImGui.SameLine();
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() - (4 * GlobalScale));
-        if (ImGui.ColorEdit3($"##{this.NodePtr:X}addRGBPicker", ref addTransformed, NoAlpha | NoInputs))
+        if (ImGui.ColorEdit3($"##{(nint)this.Node:X}addRGBPicker", ref addTransformed, NoAlpha | NoInputs))
         {
             Node->AddRed = (short)Math.Floor((addTransformed.X * 510f) - 255f);
             Node->AddGreen = (short)Math.Floor((addTransformed.Y * 510f) - 255f);
@@ -186,8 +186,7 @@ public unsafe partial class ResNodeTree
 
 internal unsafe partial class CounterNodeTree
 {
-    /// <inheritdoc/>
-    protected override void DrawEditorRows()
+    private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
@@ -199,7 +198,7 @@ internal unsafe partial class CounterNodeTree
         ImGui.TableNextColumn();
 
         ImGui.SetNextItemWidth(150);
-        if (ImGui.InputText($"##{this.NodePtr:X}counterEdit", ref str, 512, EnterReturnsTrue))
+        if (ImGui.InputText($"##{(nint)this.Node:X}counterEdit", ref str, 512, EnterReturnsTrue))
         {
             CntNode->SetText(str);
         }
@@ -208,10 +207,9 @@ internal unsafe partial class CounterNodeTree
 
 internal unsafe partial class ImageNodeTree
 {
-    internal static int TexDisplayStyle { get; set; }
+    private static int TexDisplayStyle { get; set; }
 
-    /// <inheritdoc/>
-    protected override void DrawEditorRows()
+    private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
@@ -223,7 +221,7 @@ internal unsafe partial class ImageNodeTree
         ImGui.Text("Part Id:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.InputInt($"##partId{this.NodePtr:X}", ref partId, 1, 1))
+        if (ImGui.InputInt($"##partId{(nint)this.Node:X}", ref partId, 1, 1))
         {
             if (partId < 0)
             {
@@ -242,8 +240,7 @@ internal unsafe partial class ImageNodeTree
 
 internal unsafe partial class NineGridNodeTree
 {
-    /// <inheritdoc/>
-    protected override void DrawEditorRows()
+    private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
@@ -255,7 +252,7 @@ internal unsafe partial class NineGridNodeTree
         ImGui.Text("Ninegrid Offsets:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}ngOffsetLR", ref lr, 1, 0))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}ngOffsetLR", ref lr, 1, 0))
         {
             NgNode->LeftOffset = (short)Math.Max(0, lr.X);
             NgNode->RightOffset = (short)Math.Max(0, lr.Y);
@@ -267,7 +264,7 @@ internal unsafe partial class NineGridNodeTree
         ImGui.TableNextColumn();
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.DragFloat2($"##{this.NodePtr:X}ngOffsetTB", ref tb, 1, 0))
+        if (ImGui.DragFloat2($"##{(nint)this.Node:X}ngOffsetTB", ref tb, 1, 0))
         {
             NgNode->TopOffset = (short)Math.Max(0, tb.X);
             NgNode->BottomOffset = (short)Math.Max(0, tb.Y);
@@ -283,24 +280,7 @@ internal unsafe partial class TextNodeTree
 
     private static readonly string[] FontNames = Enum.GetNames<FontType>();
 
-    internal static bool InputAlignment(string label, ref AlignmentType alignment)
-    {
-        var hAlign = (int)alignment % 3;
-        var vAlign = ((int)alignment - hAlign) / 3;
-
-        var hAlignInput = IconSelectInput($"{label}H", ref hAlign, new() { 0, 1, 2 }, new() { AlignLeft, AlignCenter, AlignRight });
-        var vAlignInput = IconSelectInput($"{label}V", ref vAlign, new() { 0, 1, 2 }, new() { ArrowsUpToLine, GripLines, ArrowsDownToLine });
-
-        if (hAlignInput || vAlignInput)
-        {
-            alignment = (AlignmentType)((vAlign * 3) + hAlign);
-            return true;
-        }
-
-        return false;
-    }
-
-    protected override void DrawEditorRows()
+    private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
@@ -316,7 +296,7 @@ internal unsafe partial class TextNodeTree
         ImGui.Text("Text:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(Math.Max(ImGui.GetWindowContentRegionMax().X - ImGui.GetCursorPosX() - 50f, 150));
-        if (ImGui.InputText($"##{this.NodePtr:X}textEdit", ref text, 512, EnterReturnsTrue))
+        if (ImGui.InputText($"##{(nint)this.Node:X}textEdit", ref text, 512, EnterReturnsTrue))
         {
             TxtNode->SetText(text);
         }
@@ -326,7 +306,7 @@ internal unsafe partial class TextNodeTree
         ImGui.Text("Font:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.Combo($"##{this.NodePtr:X}fontType", ref fontIndex, FontNames, FontList.Count))
+        if (ImGui.Combo($"##{(nint)this.Node:X}fontType", ref fontIndex, FontNames, FontList.Count))
         {
             TxtNode->FontType = FontList[fontIndex];
         }
@@ -336,7 +316,7 @@ internal unsafe partial class TextNodeTree
         ImGui.Text("Font Size:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.InputInt($"##{this.NodePtr:X}fontSize", ref fontSize, 1, 10))
+        if (ImGui.InputInt($"##{(nint)this.Node:X}fontSize", ref fontSize, 1, 10))
         {
             TxtNode->FontSize = (byte)fontSize;
         }
@@ -345,7 +325,7 @@ internal unsafe partial class TextNodeTree
         ImGui.TableNextColumn();
         ImGui.Text("Alignment:");
         ImGui.TableNextColumn();
-        if (InputAlignment($"##{this.NodePtr:X}alignment", ref alignment))
+        if (InputAlignment($"##{(nint)this.Node:X}alignment", ref alignment))
         {
             TxtNode->AlignmentType = alignment;
         }
@@ -355,7 +335,7 @@ internal unsafe partial class TextNodeTree
         ImGui.Text("Text Color:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.ColorEdit4($"##{this.NodePtr:X}TextRGB", ref textColor, DisplayHex))
+        if (ImGui.ColorEdit4($"##{(nint)this.Node:X}TextRGB", ref textColor, DisplayHex))
         {
             TxtNode->TextColor = new() { RGBA = RgbaVector4ToUint(textColor) };
         }
@@ -365,9 +345,26 @@ internal unsafe partial class TextNodeTree
         ImGui.Text("Edge Color:");
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(150);
-        if (ImGui.ColorEdit4($"##{this.NodePtr:X}EdgeRGB", ref edgeColor, DisplayHex))
+        if (ImGui.ColorEdit4($"##{(nint)this.Node:X}EdgeRGB", ref edgeColor, DisplayHex))
         {
             TxtNode->EdgeColor = new() { RGBA = RgbaVector4ToUint(edgeColor) };
         }
+    }
+
+    private static bool InputAlignment(string label, ref AlignmentType alignment)
+    {
+        var hAlign = (int)alignment % 3;
+        var vAlign = ((int)alignment - hAlign) / 3;
+
+        var hAlignInput = IconSelectInput($"{label}H", ref hAlign, new() { 0, 1, 2 }, new() { AlignLeft, AlignCenter, AlignRight });
+        var vAlignInput = IconSelectInput($"{label}V", ref vAlign, new() { 0, 1, 2 }, new() { ArrowsUpToLine, GripLines, ArrowsDownToLine });
+
+        if (hAlignInput || vAlignInput)
+        {
+            alignment = (AlignmentType)((vAlign * 3) + hAlign);
+            return true;
+        }
+
+        return false;
     }
 }

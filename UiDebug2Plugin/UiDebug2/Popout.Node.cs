@@ -33,11 +33,10 @@ internal unsafe class NodePopoutWindow : Window, IDisposable
         this.SizeConstraints = new() { MinimumSize = new(100, 100) };
     }
 
-    public AddonTree AddonTree => this.resNodeTree.AddonTree;
+    private AddonTree AddonTree => this.resNodeTree.AddonTree;
 
-    internal AtkResNode* Node => this.resNodeTree.Node;
+    private AtkResNode* Node => this.resNodeTree.Node;
 
-    /// <inheritdoc/>
     public override void Draw()
     {
         if (this.Node != null && this.AddonTree.ContainsNode(this.Node))
@@ -55,7 +54,6 @@ internal unsafe class NodePopoutWindow : Window, IDisposable
         }
     }
 
-    /// <inheritdoc/>
     public void Dispose()
     {
     }

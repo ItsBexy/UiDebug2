@@ -18,38 +18,26 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
-public unsafe partial class ResNodeTree : IDisposable
+internal unsafe partial class ResNodeTree : IDisposable
 {
     private NodePopoutWindow? window;
 
-    private bool editable;
+    private bool editorOpen;
 
-    internal ResNodeTree(AtkResNode* node, AddonTree addonTree)
+    private protected ResNodeTree(AtkResNode* node, AddonTree addonTree)
     {
         this.Node = node;
         this.AddonTree = addonTree;
         this.NodeType = node->Type;
-        this.DirectChildCount = this.GetDirectChildCount();
-        this.TypeString = $"{this.NodeType} Node{(this.DirectChildCount > 0 ? $" [+{this.DirectChildCount}]" : string.Empty)}";
-        this.PointerString = $"({(long)node:X})";
-        this.AddonTree.NodeTrees.Add(this.NodePtr, this);
+        this.AddonTree.NodeTrees.Add((nint)this.Node, this);
     }
 
-    internal AtkResNode* Node { get; set; }
+    protected internal AtkResNode* Node { get; set; }
 
-    internal nint NodePtr => (nint)this.Node;
+    protected internal AddonTree AddonTree { get; private set; }
 
-    internal NodeType NodeType { get; init; }
+    private protected NodeType NodeType { get; init; }
 
-    internal string TypeString { get; init; }
-
-    internal string PointerString { get; init; }
-
-    internal AddonTree AddonTree { get; set; }
-
-    internal int DirectChildCount { get; init; }
-
-    /// <inheritdoc/>
     public void Dispose()
     {
         if (this.window != null && PopoutWindows.Windows.Contains(this.window))
@@ -100,14 +88,70 @@ public unsafe partial class ResNodeTree : IDisposable
         }
     }
 
-    internal int GetDirectChildCount()
+    internal void Print(uint? index, bool forceOpen = false)
+    {
+        if (SearchResults.Length > 0 && SearchResults[0] == (nint)this.Node)
+        {
+            this.PrintWithHighlights(index);
+        }
+        else
+        {
+            this.PrintTree(index, forceOpen);
+        }
+    }
+
+    internal void WriteTreeHeading()
+    {
+        ImGui.Text(this.GetHeaderText());
+        this.PrintFieldNames();
+    }
+
+    private protected void PrintFieldName(nint ptr, Vector4 color)
+    {
+        if (this.AddonTree.FieldNames.TryGetValue(ptr, out var result))
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(color, string.Join(".", result));
+        }
+    }
+
+    private protected virtual string GetHeaderText()
+    {
+        var count = this.GetDirectChildCount();
+        return $"{this.NodeType} Node{(count > 0 ? $" [+{count}]" : string.Empty)} ({(nint)this.Node:X})";
+    }
+
+    private protected virtual void PrintNodeObject()
+    {
+        ShowStruct(this.Node);
+        ImGui.SameLine();
+        ImGui.NewLine();
+    }
+
+    private protected virtual void PrintFieldNames() => this.PrintFieldName((nint)this.Node, new(0, 0.85F, 1, 1));
+
+    private protected virtual void PrintChildNodes()
+    {
+        var prevNode = Node->ChildNode;
+        while (prevNode != null)
+        {
+            GetOrCreate(prevNode, this.AddonTree).Print(null);
+            prevNode = prevNode->PrevSiblingNode;
+        }
+    }
+
+    private protected virtual void PrintFieldsForNodeType(bool editorOpen = false)
+    {
+    }
+
+    private int GetDirectChildCount()
     {
         var count = 0;
-        if (Node->ChildNode != null)
+        if (this.Node->ChildNode != null)
         {
             count++;
 
-            var prev = Node->ChildNode;
+            var prev = this.Node->ChildNode;
             while (prev->PrevSiblingNode != null)
             {
                 prev = prev->PrevSiblingNode;
@@ -118,26 +162,7 @@ public unsafe partial class ResNodeTree : IDisposable
         return count;
     }
 
-    internal virtual void PrintNodeObject()
-    {
-        ShowStruct(this.Node);
-        ImGui.SameLine();
-        ImGui.NewLine();
-    }
-
-    internal void Print(uint? index, bool forceOpen = false)
-    {
-        if (SearchResults.Length > 0 && SearchResults[0] == this.NodePtr)
-        {
-            this.PrintWithHighlights(index);
-        }
-        else
-        {
-            this.PrintTree(index, forceOpen);
-        }
-    }
-
-    internal void PrintWithHighlights(uint? index)
+    private void PrintWithHighlights(uint? index)
     {
         if (!Scrolled)
         {
@@ -152,7 +177,7 @@ public unsafe partial class ResNodeTree : IDisposable
         ImGui.GetWindowDrawList().AddRectFilled(start, end, RgbaVector4ToUint(new Vector4(1, 1, 0.2f, 1) { W = Countdown / 200f }));
     }
 
-    internal void PrintTree(uint? index, bool forceOpen = false)
+    private void PrintTree(uint? index, bool forceOpen = false)
     {
         var visible = Node->NodeFlags.HasFlag(Visible);
 
@@ -160,14 +185,14 @@ public unsafe partial class ResNodeTree : IDisposable
                            Node->Color.A == 0 ? new(0.015f, 0.575f, 0.355f, 1) :
                            new(0.1f, 1f, 0.1f, 1f);
 
-        if (forceOpen || SearchResults.Contains(this.NodePtr))
+        if (forceOpen || SearchResults.Contains((nint)this.Node))
         {
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
         }
 
         ImGui.PushStyleColor(ImGuiCol.Text, displayColor);
 
-        var treePush = NestedTreePush($"{(index == null ? string.Empty : $"[{index}] ")}[#{Node->NodeId}]###{this.NodePtr:X}nodeTree", displayColor, out var lineStart);
+        var treePush = NestedTreePush($"{(index == null ? string.Empty : $"[{index}] ")}[#{Node->NodeId}]###{(nint)this.Node:X}nodeTree", displayColor, out var lineStart);
 
         if (ImGui.IsItemHovered())
         {
@@ -181,37 +206,44 @@ public unsafe partial class ResNodeTree : IDisposable
 
         if (treePush)
         {
-            PrintFieldValuePair("Node", $"{this.NodePtr:X}");
-
-            ImGui.SameLine();
-            this.PrintNodeObject();
-
-            PrintFieldValuePairs(
-                ("NodeID", $"{Node->NodeId}"),
-                ("Type", $"{Node->Type}"));
-
-            this.DrawBasicControls();
-
-            if (this.editable)
+            try
             {
-                this.DrawNodeEditorTable();
+                PrintFieldValuePair("Node", $"{(nint)this.Node:X}");
+
+                ImGui.SameLine();
+                this.PrintNodeObject();
+
+                PrintFieldValuePairs(
+                    ("NodeID", $"{Node->NodeId}"),
+                    ("Type", $"{Node->Type}"));
+
+                this.DrawBasicControls();
+
+                if (this.editorOpen)
+                {
+                    this.DrawNodeEditorTable();
+                }
+                else
+                {
+                    this.PrintResNodeFields();
+                }
+
+                this.PrintFieldsForNodeType(this.editorOpen);
+                PrintEvents(this.Node);
+                new TimelineTree(this.Node).Print();
+
+                this.PrintChildNodes();
             }
-            else
+            catch (Exception ex)
             {
-                this.PrintResNodeFields();
+                ImGui.TextDisabled($"Couldn't display node!\n\n{ex}");
             }
-
-            this.PrintFieldsForNodeType(this.editable);
-            PrintEvents(this.Node);
-            new TimelineTree(this.Node).Print();
-
-            this.PrintChildNodes();
 
             NestedTreePop(lineStart, displayColor);
         }
     }
 
-    internal void DrawBasicControls()
+    private void DrawBasicControls()
     {
         ImGui.SameLine();
         var y = ImGui.GetCursorPosY();
@@ -237,11 +269,11 @@ public unsafe partial class ResNodeTree : IDisposable
 
         ImGui.SameLine();
         ImGui.SetCursorPosY(y - 2);
-        ImGui.Checkbox($"Edit###editCheckBox{this.NodePtr}", ref this.editable);
+        ImGui.Checkbox($"Edit###editCheckBox{(nint)this.Node}", ref this.editorOpen);
 
         ImGui.SameLine();
         ImGui.SetCursorPosY(y - 2);
-        if (ImGuiComponents.IconButton($"###{this.NodePtr}popoutButton", this.window?.IsOpen == true ? Times : ArrowUpRightFromSquare, null))
+        if (ImGuiComponents.IconButton($"###{(nint)this.Node}popoutButton", this.window?.IsOpen == true ? Times : ArrowUpRightFromSquare, null))
         {
             this.TogglePopout();
         }
@@ -252,41 +284,7 @@ public unsafe partial class ResNodeTree : IDisposable
         }
     }
 
-    internal void WriteTreeHeading()
-    {
-        ImGui.Text(this.TypeString);
-        ImGui.SameLine();
-        ImGui.Text(this.PointerString);
-
-        this.PrintFieldNames();
-    }
-
-    internal virtual void PrintFieldNames() => this.PrintFieldName(this.NodePtr, new(0, 0.85F, 1, 1));
-
-    internal void PrintFieldName(nint ptr, Vector4 color)
-    {
-        if (this.AddonTree.FieldNames.TryGetValue(ptr, out var result))
-        {
-            ImGui.SameLine();
-            ImGui.TextColored(color, string.Join(".", result));
-        }
-    }
-
-    internal virtual void PrintChildNodes()
-    {
-        var prevNode = Node->ChildNode;
-        while (prevNode != null)
-        {
-            GetOrCreate(prevNode, this.AddonTree).Print(null);
-            prevNode = prevNode->PrevSiblingNode;
-        }
-    }
-
-    internal virtual void PrintFieldsForNodeType(bool editorOpen = false)
-    {
-    }
-
-    internal void TogglePopout()
+    private void TogglePopout()
     {
         if (this.window != null)
         {
@@ -294,12 +292,12 @@ public unsafe partial class ResNodeTree : IDisposable
         }
         else
         {
-            this.window = new NodePopoutWindow(this, $"{this.AddonTree.AddonName}: {this.TypeString} {this.PointerString}###nodePopout{this.NodePtr}");
+            this.window = new NodePopoutWindow(this, $"{this.AddonTree.AddonName}: {this.GetHeaderText()}###nodePopout{(nint)this.Node}");
             PopoutWindows.AddWindow(this.window);
         }
     }
 
-    internal void PrintResNodeFields()
+    private void PrintResNodeFields()
     {
         PrintFieldValuePairs(
             ("X", $"{Node->X}"),

@@ -21,34 +21,15 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
     {
     }
 
-    internal AtkImageNode* ImgNode => (AtkImageNode*)this.Node;
+    private protected virtual uint PartId => ImgNode->PartId;
 
-    internal virtual uint PartId => ImgNode->PartId;
+    private protected virtual AtkUldPartsList* PartsList => ImgNode->PartsList;
 
-    internal virtual AtkUldPartsList* PartsList => ImgNode->PartsList;
+    private protected TextureData TexData { get; set; }
 
-    internal TextureData TexData { get; set; }
+    private AtkImageNode* ImgNode => (AtkImageNode*)this.Node;
 
-    internal static void PrintPartCoords(float u, float v, float w, float h, bool asFloat = false, bool lineBreak = false)
-    {
-        ImGui.TextDisabled($"{u}, {v},{(lineBreak ? "\n" : " ")}{w}, {h}");
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Click to copy as Vector2\nShift-click to copy as Vector4");
-        }
-
-        var suffix = asFloat ? "f" : string.Empty;
-
-        if (ImGui.IsItemClicked())
-        {
-            ImGui.SetClipboardText(ImGui.IsKeyDown(ImGuiKey.ModShift)
-                                       ? $"new Vector4({u}{suffix}, {v}{suffix}, {w}{suffix}, {h}{suffix})"
-                                       : $"new Vector2({u}{suffix}, {v}{suffix});\nnew Vector2({w}{suffix}, {h}{suffix})");
-        }
-    }
-
-    internal void DrawTextureAndParts()
+    private protected void DrawTextureAndParts()
     {
         this.TexData = new TextureData(this.PartsList, this.PartId);
 
@@ -95,27 +76,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         }
     }
 
-    internal void DrawFullTexture()
-    {
-        var originPos = ImGui.GetCursorScreenPos();
-        var imagePos = ImGui.GetCursorPos();
-
-        ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(this.TexData.Texture->Width, this.TexData.Texture->Height));
-
-        for (uint p = 0; p < this.TexData.PartsList->PartCount; p++)
-        {
-            if (p == this.TexData.PartId)
-            {
-                continue;
-            }
-
-            this.DrawPartOutline(p, originPos, imagePos, new(0.6f, 0.6f, 0.6f, 1), true);
-        }
-
-        this.DrawPartOutline(this.TexData.PartId, originPos, imagePos, new(0, 0.85F, 1, 1));
-    }
-
-    internal virtual void DrawPartOutline(uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
+    private protected virtual void DrawPartOutline(uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
     {
         var part = this.TexData.PartsList->Parts[partId];
 
@@ -141,7 +102,56 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         ImGui.SetCursorPos(savePos);
     }
 
-    internal void PrintPartsTable()
+    private protected override void PrintNodeObject() => ShowStruct(this.ImgNode);
+
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
+    {
+        PrintFieldValuePairs(
+            ("Wrap", $"{ImgNode->WrapMode}"),
+            ("Image Flags", $"0x{ImgNode->Flags:X}"));
+        this.DrawTextureAndParts();
+    }
+
+    private static void PrintPartCoords(float u, float v, float w, float h, bool asFloat = false, bool lineBreak = false)
+    {
+        ImGui.TextDisabled($"{u}, {v},{(lineBreak ? "\n" : " ")}{w}, {h}");
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Click to copy as Vector2\nShift-click to copy as Vector4");
+        }
+
+        var suffix = asFloat ? "f" : string.Empty;
+
+        if (ImGui.IsItemClicked())
+        {
+            ImGui.SetClipboardText(ImGui.IsKeyDown(ImGuiKey.ModShift)
+                                       ? $"new Vector4({u}{suffix}, {v}{suffix}, {w}{suffix}, {h}{suffix})"
+                                       : $"new Vector2({u}{suffix}, {v}{suffix});\nnew Vector2({w}{suffix}, {h}{suffix})");
+        }
+    }
+
+    private void DrawFullTexture()
+    {
+        var originPos = ImGui.GetCursorScreenPos();
+        var imagePos = ImGui.GetCursorPos();
+
+        ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(this.TexData.Texture->Width, this.TexData.Texture->Height));
+
+        for (uint p = 0; p < this.TexData.PartsList->PartCount; p++)
+        {
+            if (p == this.TexData.PartId)
+            {
+                continue;
+            }
+
+            this.DrawPartOutline(p, originPos, imagePos, new(0.6f, 0.6f, 0.6f, 1), true);
+        }
+
+        this.DrawPartOutline(this.TexData.PartId, originPos, imagePos, new(0, 0.85F, 1, 1));
+    }
+
+    private void PrintPartsTable()
     {
         ImGui.BeginTable($"partsTable##{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", 3, Borders | RowBg | Reorderable);
         ImGui.TableSetupColumn("Part ID", WidthFixed);
@@ -206,19 +216,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         ImGui.EndTable();
     }
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject() => ShowStruct(this.ImgNode);
-
-    /// <inheritdoc/>
-    internal override void PrintFieldsForNodeType(bool editorOpen = false)
-    {
-        PrintFieldValuePairs(
-            ("Wrap", $"{ImgNode->WrapMode}"),
-            ("Image Flags", $"0x{ImgNode->Flags:X}"));
-        this.DrawTextureAndParts();
-    }
-
-    public struct TextureData
+    protected struct TextureData
     {
         public AtkUldPartsList* PartsList;
         public uint PartCount;
@@ -249,7 +247,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
             this.TexType = asset->AtkTexture.TextureType;
 
-            if (this.TexType == TextureType.Resource)
+            if (this.TexType == Resource)
             {
                 var resource = asset->AtkTexture.Resource;
                 this.Texture = resource->KernelTextureObject;

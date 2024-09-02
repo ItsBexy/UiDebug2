@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 
 using Dalamud.Interface.Components;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 
@@ -13,8 +14,6 @@ namespace UiDebug2;
 
 internal unsafe partial class UiDebug2
 {
-    internal const int UnitListCount = 18;
-
     internal static readonly List<UnitListOption> UnitListOptions = new()
     {
         new(13, "Loaded"),
@@ -40,6 +39,8 @@ internal unsafe partial class UiDebug2
     private string addonNameSearch = string.Empty;
 
     private bool visFilter;
+
+    internal static AtkUnitList* GetUnitListBaseAddr() => &((UIModule*)GameGui.GetUIModule())->GetRaptureAtkModule()->RaptureAtkUnitManager.AtkUnitManager.DepthLayerOneList;
 
     private void DrawSidebar()
     {
@@ -83,7 +84,7 @@ internal unsafe partial class UiDebug2
     {
         ImGui.BeginChild("###sideBar_addonList", new(250, -44), true, ImGuiWindowFlags.AlwaysVerticalScrollbar);
 
-        var unitListBaseAddr = &AtkStage.Instance()->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
+        var unitListBaseAddr = GetUnitListBaseAddr();
 
         foreach (var unit in UnitListOptions)
         {
@@ -158,12 +159,12 @@ internal unsafe partial class UiDebug2
         }
     }
 
-    public struct UnitListOption
+    internal struct UnitListOption
     {
-        public uint Index;
-        public string Name;
+        internal uint Index;
+        internal string Name;
 
-        public UnitListOption(uint i, string name)
+        internal UnitListOption(uint i, string name)
         {
             this.Index = i;
             this.Name = name;
@@ -175,7 +176,7 @@ internal unsafe partial class UiDebug2
         internal string Name;
         internal bool Visible;
 
-        public AddonOption(string name, bool visible)
+        internal AddonOption(string name, bool visible)
         {
             this.Name = name;
             this.Visible = visible;

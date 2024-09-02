@@ -26,9 +26,9 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
     private Utf8String NodeText => TxtNode->NodeText;
 
-    internal override void PrintNodeObject() => ShowStruct(this.TxtNode);
+    private protected override void PrintNodeObject() => ShowStruct(this.TxtNode);
 
-    internal override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
     {
         if (editorOpen)
         {
@@ -61,9 +61,9 @@ internal unsafe partial class TextNodeTree : ResNodeTree
         this.PrintPayloads();
     }
 
-    internal void PrintPayloads()
+    private void PrintPayloads()
     {
-        if (ImGui.TreeNode($"Text Payloads##{this.NodePtr:X}"))
+        if (ImGui.TreeNode($"Text Payloads##{(nint)this.Node:X}"))
         {
             var utf8String = this.NodeText;
             var seStringBytes = new byte[utf8String.BufUsed];

@@ -16,18 +16,15 @@ internal unsafe partial class NineGridNodeTree : ImageNodeTree
     {
     }
 
-    /// <inheritdoc/>
-    internal override uint PartId => NgNode->PartId;
+    private protected override uint PartId => NgNode->PartId;
 
-    /// <inheritdoc/>
-    internal override AtkUldPartsList* PartsList => NgNode->PartsList;
+    private protected override AtkUldPartsList* PartsList => NgNode->PartsList;
 
     private AtkNineGridNode* NgNode => (AtkNineGridNode*)this.Node;
 
     private NineGridOffsets Offsets => new(this.NgNode);
 
-    /// <inheritdoc/>
-    internal override void DrawPartOutline(
+    private protected override void DrawPartOutline(
         uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
     {
         var part = this.TexData.PartsList->Parts[partId];
@@ -63,11 +60,9 @@ internal unsafe partial class NineGridNodeTree : ImageNodeTree
         ImGui.SetCursorPos(savePos);
     }
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject() => ShowStruct(this.NgNode);
+    private protected override void PrintNodeObject() => ShowStruct(this.NgNode);
 
-    /// <inheritdoc/>
-    internal override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
     {
         if (!editorOpen)
         {

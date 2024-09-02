@@ -28,7 +28,6 @@ internal class AddonPopoutWindow : Window, IDisposable
         this.SizeConstraints = new() { MinimumSize = new(100, 100) };
     }
 
-    /// <inheritdoc/>
     public override void Draw()
     {
         ImGui.BeginChild($"{this.WindowName}child", new(-1, -1), true);
@@ -36,7 +35,6 @@ internal class AddonPopoutWindow : Window, IDisposable
         ImGui.EndChild();
     }
 
-    /// <inheritdoc/>
     public void Dispose()
     {
     }

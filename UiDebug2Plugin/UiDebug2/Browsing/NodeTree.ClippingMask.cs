@@ -11,17 +11,13 @@ internal unsafe class ClippingMaskNodeTree : ImageNodeTree
     {
     }
 
-    internal AtkClippingMaskNode* CmNode => (AtkClippingMaskNode*)this.Node;
+    private protected override uint PartId => CmNode->PartId;
 
-    /// <inheritdoc/>
-    internal override uint PartId => CmNode->PartId;
+    private protected override AtkUldPartsList* PartsList => CmNode->PartsList;
 
-    /// <inheritdoc/>
-    internal override AtkUldPartsList* PartsList => CmNode->PartsList;
+    private AtkClippingMaskNode* CmNode => (AtkClippingMaskNode*)this.Node;
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject() => ShowStruct(this.CmNode);
+    private protected override void PrintNodeObject() => ShowStruct(this.CmNode);
 
-    /// <inheritdoc/>
-    internal override void PrintFieldsForNodeType(bool editorOpen = false) => this.DrawTextureAndParts();
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false) => this.DrawTextureAndParts();
 }

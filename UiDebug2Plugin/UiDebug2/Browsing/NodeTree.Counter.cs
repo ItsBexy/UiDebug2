@@ -12,13 +12,11 @@ internal unsafe partial class CounterNodeTree : ResNodeTree
     {
     }
 
-    internal AtkCounterNode* CntNode => (AtkCounterNode*)this.Node;
+    private AtkCounterNode* CntNode => (AtkCounterNode*)this.Node;
 
-    /// <inheritdoc/>
-    internal override void PrintNodeObject() => ShowStruct(this.CntNode);
+    private protected override void PrintNodeObject() => ShowStruct(this.CntNode);
 
-    /// <inheritdoc/>
-    internal override void PrintFieldsForNodeType(bool editorOpen = false)
+    private protected override void PrintFieldsForNodeType(bool editorOpen = false)
     {
         if (!editorOpen)
         {

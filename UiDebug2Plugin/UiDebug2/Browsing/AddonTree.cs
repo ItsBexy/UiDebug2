@@ -32,7 +32,6 @@ public unsafe partial class AddonTree : IDisposable
 
     internal Dictionary<nint, ResNodeTree> NodeTrees { get; set; } = new();
 
-    /// <inheritdoc/>
     public void Dispose()
     {
         foreach (var nodeTree in this.NodeTrees)
@@ -132,7 +131,7 @@ public unsafe partial class AddonTree : IDisposable
 
         ImGui.Separator();
 
-        var addonObj = GetAddonObj(this.AddonName, addon);
+        var addonObj = this.GetAddonObj(addon);
         if (addonObj != null)
         {
             ShowStruct(addonObj, (ulong)addon);
@@ -154,7 +153,7 @@ public unsafe partial class AddonTree : IDisposable
     }
 
     /// <summary>
-    /// Checks whether an <see cref="AtkResNode"/> exists somewhere within this <see cref="AddonTree"/>'s associated <see cref="AtkUnitBase"/> (or any of its <see cref="AtkComponentNode"/>s).
+    /// Checks whether a given <see cref="AtkResNode"/> exists somewhere within this <see cref="AddonTree"/>'s associated <see cref="AtkUnitBase"/> (or any of its <see cref="AtkComponentNode"/>s).
     /// </summary>
     /// <param name="node">The node to check.</param>
     /// <returns>true if the node was found.</returns>
