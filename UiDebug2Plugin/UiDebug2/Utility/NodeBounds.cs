@@ -7,11 +7,21 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 
 using static System.Math;
+using static Dalamud.Interface.ColorHelpers;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Utility;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// A struct representing the perimeter of an <see cref="AtkResNode"/>, accounting for all transformations.
+/// </summary>
 public unsafe struct NodeBounds
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeBounds"/> struct.
+    /// </summary>
+    /// <param name="node">The node to calculate the bounds of.</param>
     internal NodeBounds(AtkResNode* node)
     {
         if (node == null)
@@ -21,31 +31,31 @@ public unsafe struct NodeBounds
 
         var w = node->Width;
         var h = node->Height;
-        this.Points = w == 0 && h == 0 ?
-                     new() { new(0) } :
-                     new() { new(0), new(w, 0), new(w, h), new(0, h) };
+        this.Points = w == 0 && h == 0 ? [new(0)]
+                          : [new(0), new(w, 0), new(w, h), new(0, h)];
 
         this.TransformPoints(node);
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodeBounds"/> struct, containing only a single given point.
+    /// </summary>
+    /// <param name="point">The point onscreen.</param>
+    /// <param name="node">The node used to calculate transformations.</param>
     internal NodeBounds(Vector2 point, AtkResNode* node)
     {
-        this.Points = new() { point };
+        this.Points = [point];
         this.TransformPoints(node);
     }
 
-    internal List<Vector2> Points { get; set; } = new();
+    private List<Vector2> Points { get; set; } = [];
 
-    internal static Vector2 TransformPoint(Vector2 p, Vector2 o, float r, Vector2 s)
-    {
-        var cosR = (float)Cos(r);
-        var sinR = (float)Sin(r);
-        var d = (p - o) * s;
-
-        return new(o.X + (d.X * cosR) - (d.Y * sinR),
-                   o.Y + (d.X * sinR) + (d.Y * cosR));
-    }
-
+    /// <summary>
+    /// Draws the bounds onscreen.
+    /// </summary>
+    /// <param name="col">The color of line to use.</param>
+    /// <param name="thickness">The thickness of line to use.</param>
+    /// <remarks>If there is only a single point to draw, it will be indicated with a circle and dot.</remarks>
     internal readonly void Draw(Vector4 col, int thickness = 1)
     {
         if (this.Points == null || this.Points.Count == 0)
@@ -55,8 +65,8 @@ public unsafe struct NodeBounds
 
         if (this.Points.Count == 1)
         {
-            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], 10, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col with { W = col.W / 2 }), 12, thickness);
-            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], thickness, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col), 12, thickness + 1);
+            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], 10, RgbaVector4ToUint(col with { W = col.W / 2 }), 12, thickness);
+            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], thickness, RgbaVector4ToUint(col), 12, thickness + 1);
         }
         else
         {
@@ -67,12 +77,17 @@ public unsafe struct NodeBounds
             }
 
             ImGui.GetBackgroundDrawList()
-                 .AddPolyline(ref path[0], path.Length, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col), ImDrawFlags.Closed, thickness);
+                 .AddPolyline(ref path[0], path.Length, RgbaVector4ToUint(col), ImDrawFlags.Closed, thickness);
 
             path.Dispose();
         }
     }
 
+    /// <summary>
+    /// Draws the bounds onscreen, filled in.
+    /// </summary>
+    /// <param name="col">The fill and border color.</param>
+    /// <param name="thickness">The border thickness.</param>
     internal readonly void DrawFilled(Vector4 col, int thickness = 1)
     {
         if (this.Points == null || this.Points.Count == 0)
@@ -83,8 +98,8 @@ public unsafe struct NodeBounds
         if (this.Points.Count == 1)
         {
             ImGui.GetBackgroundDrawList()
-                 .AddCircleFilled(this.Points[0], 10, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col with { W = col.W / 2 }), 12);
-            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], 10, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col), 12, thickness);
+                 .AddCircleFilled(this.Points[0], 10, RgbaVector4ToUint(col with { W = col.W / 2 }), 12);
+            ImGui.GetBackgroundDrawList().AddCircle(this.Points[0], 10, RgbaVector4ToUint(col), 12, thickness);
         }
         else
         {
@@ -95,29 +110,19 @@ public unsafe struct NodeBounds
             }
 
             ImGui.GetBackgroundDrawList()
-                 .AddConvexPolyFilled(ref path[0], path.Length, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col with { W = col.W / 2 }));
+                 .AddConvexPolyFilled(ref path[0], path.Length, RgbaVector4ToUint(col with { W = col.W / 2 }));
             ImGui.GetBackgroundDrawList()
-                 .AddPolyline(ref path[0], path.Length, Dalamud.Interface.ColorHelpers.RgbaVector4ToUint(col), ImDrawFlags.Closed, thickness);
+                 .AddPolyline(ref path[0], path.Length, RgbaVector4ToUint(col), ImDrawFlags.Closed, thickness);
 
             path.Dispose();
         }
     }
 
-    internal void TransformPoints(AtkResNode* transformNode)
-    {
-        while (transformNode != null)
-        {
-            var offset = new Vector2(transformNode->X, transformNode->Y);
-            var origin = offset + new Vector2(transformNode->OriginX, transformNode->OriginY);
-            var rotation = transformNode->Rotation;
-            var scale = new Vector2(transformNode->ScaleX, transformNode->ScaleY);
-
-            this.Points = this.Points.Select(b => TransformPoint(b + offset, origin, rotation, scale)).ToList();
-
-            transformNode = transformNode->ParentNode;
-        }
-    }
-
+    /// <summary>
+    /// Checks whether the bounds contain a given point.
+    /// </summary>
+    /// <param name="p">The point to check.</param>
+    /// <returns>True if the point exists within the bounds.</returns>
     internal readonly bool ContainsPoint(Vector2 p)
     {
         var count = this.Points.Count;
@@ -138,5 +143,31 @@ public unsafe struct NodeBounds
         }
 
         return inside;
+    }
+
+    private static Vector2 TransformPoint(Vector2 p, Vector2 o, float r, Vector2 s)
+    {
+        var cosR = (float)Cos(r);
+        var sinR = (float)Sin(r);
+        var d = (p - o) * s;
+
+        return new(
+            o.X + (d.X * cosR) - (d.Y * sinR),
+            o.Y + (d.X * sinR) + (d.Y * cosR));
+    }
+
+    private void TransformPoints(AtkResNode* transformNode)
+    {
+        while (transformNode != null)
+        {
+            var offset = new Vector2(transformNode->X, transformNode->Y);
+            var origin = offset + new Vector2(transformNode->OriginX, transformNode->OriginY);
+            var rotation = transformNode->Rotation;
+            var scale = new Vector2(transformNode->ScaleX, transformNode->ScaleY);
+
+            this.Points = this.Points.Select(b => TransformPoint(b + offset, origin, rotation, scale)).ToList();
+
+            transformNode = transformNode->ParentNode;
+        }
     }
 }

@@ -15,23 +15,33 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
+/// <summary>
+/// A class representing an <see cref="AtkUnitBase"/>, allowing it to be browsed within an ImGui window.
+/// </summary>
 public unsafe partial class AddonTree : IDisposable
 {
     private readonly nint initialPtr;
 
     private AddonPopoutWindow? window;
 
-    public AddonTree(string name, nint ptr)
+    private AddonTree(string name, nint ptr)
     {
         this.AddonName = name;
         this.initialPtr = ptr;
         this.PopulateFieldNames(ptr);
     }
 
-    internal string AddonName { get; set; }
+    /// <summary>
+    /// Gets the name of the addon this tree represents.
+    /// </summary>
+    internal string AddonName { get; init; }
 
-    internal Dictionary<nint, ResNodeTree> NodeTrees { get; set; } = new();
+    /// <summary>
+    /// Gets or sets a collection of trees representing nodes within this addon.
+    /// </summary>
+    internal Dictionary<nint, ResNodeTree> NodeTrees { get; set; } = [];
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         foreach (var nodeTree in this.NodeTrees)
@@ -47,6 +57,8 @@ public unsafe partial class AddonTree : IDisposable
             PopoutWindows.RemoveWindow(this.window);
             this.window?.Dispose();
         }
+
+        GC.SuppressFinalize(this);
     }
 
     /// <summary>
@@ -91,6 +103,9 @@ public unsafe partial class AddonTree : IDisposable
         return null;
     }
 
+    /// <summary>
+    /// Draws this AddonTree within a window.
+    /// </summary>
     internal void Draw()
     {
         if (!this.ValidateAddon(out var addon))
@@ -160,7 +175,7 @@ public unsafe partial class AddonTree : IDisposable
 
         if (SearchResults.Length > 0 && Countdown <= 0)
         {
-            SearchResults = Array.Empty<nint>();
+            SearchResults = [];
         }
     }
 

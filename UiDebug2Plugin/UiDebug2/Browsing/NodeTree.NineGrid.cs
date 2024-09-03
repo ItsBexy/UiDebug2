@@ -9,31 +9,41 @@ using Vector4 = System.Numerics.Vector4;
 
 namespace UiDebug2.Browsing;
 
+/// <summary>
+/// A tree for an <see cref="AtkNineGridNode"/> that can be printed and browsed via ImGui.
+/// </summary>
 internal unsafe partial class NineGridNodeTree : ImageNodeTree
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NineGridNodeTree"/> class.
+    /// </summary>
+    /// <param name="node">The node to create a tree for.</param>
+    /// <param name="addonTree">The tree representing the containing addon.</param>
     internal NineGridNodeTree(AtkResNode* node, AddonTree addonTree)
         : base(node, addonTree)
     {
     }
 
-    private protected override uint PartId => NgNode->PartId;
+    /// <inheritdoc/>
+    private protected override uint PartId => this.NgNode->PartId;
 
-    private protected override AtkUldPartsList* PartsList => NgNode->PartsList;
+    /// <inheritdoc/>
+    private protected override AtkUldPartsList* PartsList => this.NgNode->PartsList;
 
     private AtkNineGridNode* NgNode => (AtkNineGridNode*)this.Node;
 
     private NineGridOffsets Offsets => new(this.NgNode);
 
-    private protected override void DrawPartOutline(
-        uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
+    /// <inheritdoc/>
+    private protected override void DrawPartOutline(uint partId, Vector2 cursorScreenPos, Vector2 cursorLocalPos, Vector4 col, bool reqHover = false)
     {
         var part = this.TexData.PartsList->Parts[partId];
 
         var hrFactor = this.TexData.HiRes ? 2f : 1f;
         var uv = new Vector2(part.U, part.V) * hrFactor;
         var wh = new Vector2(part.Width, part.Height) * hrFactor;
-        var partBegin = originPos + uv;
-        var partEnd = originPos + uv + wh;
+        var partBegin = cursorScreenPos + uv;
+        var partEnd = cursorScreenPos + uv + wh;
 
         var savePos = ImGui.GetCursorPos();
 
@@ -53,15 +63,17 @@ internal unsafe partial class NineGridNodeTree : ImageNodeTree
             ImGui.GetWindowDrawList().AddRect(ngBegin1, ngEnd1, ngCol);
             ImGui.GetWindowDrawList().AddRect(ngBegin2, ngEnd2, ngCol);
 
-            ImGui.SetCursorPos(imagePos + uv + new Vector2(0, -20));
+            ImGui.SetCursorPos(cursorLocalPos + uv + new Vector2(0, -20));
             ImGui.TextColored(col, $"[#{partId}]\t{part.U}, {part.V}\t{part.Width}x{part.Height}");
         }
 
         ImGui.SetCursorPos(savePos);
     }
 
+    /// <inheritdoc/>
     private protected override void PrintNodeObject() => ShowStruct(this.NgNode);
 
+    /// <inheritdoc/>
     private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         if (!isEditorOpen)

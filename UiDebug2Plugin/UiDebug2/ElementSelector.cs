@@ -22,13 +22,19 @@ using static ImGuiNET.ImGuiCol;
 using static ImGuiNET.ImGuiWindowFlags;
 using static UiDebug2.UiDebug2;
 
+// ReSharper disable StructLacksIEquatable.Global
 #pragma warning disable CS0659
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// A tool that enables the user to select UI elements within the inspector by mousing over them onscreen.
+/// </summary>
 internal unsafe class ElementSelector : IDisposable
 {
-    internal const int UnitListCount = 18;
+    private const int UnitListCount = 18;
 
     private readonly UiDebug2 uiDebug2;
 
@@ -36,24 +42,44 @@ internal unsafe class ElementSelector : IDisposable
 
     private int index;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ElementSelector"/> class.
+    /// </summary>
+    /// <param name="uiDebug2">The instance of <see cref="UiDebug2"/> this Element Selector belongs to.</param>
     internal ElementSelector(UiDebug2 uiDebug2)
     {
         this.uiDebug2 = uiDebug2;
     }
 
-    internal static nint[] SearchResults { get; set; } = Array.Empty<nint>();
+    /// <summary>
+    /// Gets or sets the results retrieved by the Element Selector.
+    /// </summary>
+    internal static nint[] SearchResults { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets a value governing the highlighting of nodes when found via search.
+    /// </summary>
     internal static float Countdown { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the window has scrolled down to the position of the search result.
+    /// </summary>
     internal static bool Scrolled { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether the mouseover UI is currently active.
+    /// </summary>
     internal bool Active { get; set; }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
         this.Active = false;
     }
 
+    /// <summary>
+    /// Draws the Element Selector and Address Search interface at the bottom of the sidebar.
+    /// </summary>
     internal void DrawInterface()
     {
         ImGui.BeginChild("###sidebar_elementSelector", new(250, 0), true);
@@ -95,7 +121,10 @@ internal unsafe class ElementSelector : IDisposable
         ImGui.EndChild();
     }
 
-    internal void DrawSelectorFrame()
+    /// <summary>
+    /// Draws the Element Selector's search output within the main window.
+    /// </summary>
+    internal void DrawSelectorOutput()
     {
         ImGui.GetIO().WantCaptureKeyboard = true;
         ImGui.GetIO().WantCaptureMouse = true;
@@ -150,7 +179,7 @@ internal unsafe class ElementSelector : IDisposable
                         nextNode = nextNode->ParentNode;
                     }
 
-                    SearchResults = ptrList.ToArray();
+                    SearchResults = [.. ptrList];
                     Countdown = 100;
                     Scrolled = false;
                 }
@@ -212,7 +241,7 @@ internal unsafe class ElementSelector : IDisposable
                     continue;
                 }
 
-                var addonResult = new AddonResult(addon, new());
+                var addonResult = new AddonResult(addon, []);
 
                 if (addonResults.Contains(addonResult))
                 {
@@ -239,7 +268,7 @@ internal unsafe class ElementSelector : IDisposable
             }
         }
 
-        return addonResults.OrderBy(static w => w.Area).ToList();
+        return [.. addonResults.OrderBy(static w => w.Area)];
     }
 
     private static List<NodeResult> GetNodeAtPosition(AtkUldManager* uldManager, Vector2 position, bool reverse)
@@ -286,7 +315,7 @@ internal unsafe class ElementSelector : IDisposable
         }
 
         Scrolled = false;
-        SearchResults = path?.ToArray() ?? Array.Empty<nint>();
+        SearchResults = path?.ToArray() ?? [];
         Countdown = 100;
         return true;
     }
@@ -301,7 +330,7 @@ internal unsafe class ElementSelector : IDisposable
 
         if ((nint)node == address)
         {
-            path = new() { (nint)node };
+            path = [(nint)node];
             return true;
         }
 
@@ -313,7 +342,7 @@ internal unsafe class ElementSelector : IDisposable
             {
                 if ((nint)cNode->Component == address)
                 {
-                    path = new() { (nint)node };
+                    path = [(nint)node];
                     return true;
                 }
 
@@ -388,12 +417,25 @@ internal unsafe class ElementSelector : IDisposable
         }
     }
 
+    /// <summary>
+    /// An <see cref="AtkUnitBase"/> found by the Element Selector.
+    /// </summary>
     internal struct AddonResult
     {
+        /// <summary>The addon itself.</summary>
         internal AtkUnitBase* Addon;
+
+        /// <summary>A list of nodes discovered within this addon by the Element Selector.</summary>
         internal List<NodeResult> Nodes;
+
+        /// <summary>The calculated area of the addon's root node.</summary>
         internal float Area;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AddonResult"/> struct.
+        /// </summary>
+        /// <param name="addon">The addon found.</param>
+        /// <param name="nodes">A list for documenting nodes found within the addon.</param>
         public AddonResult(AtkUnitBase* addon, List<NodeResult> nodes)
         {
             this.Addon = addon;
@@ -402,6 +444,7 @@ internal unsafe class ElementSelector : IDisposable
             this.Area = rootNode != null ? rootNode->Width * rootNode->Height * rootNode->ScaleY * rootNode->ScaleX : 0;
         }
 
+        /// <inheritdoc/>
         public override readonly bool Equals(object? obj)
         {
             if (obj is not AddonResult ar)
@@ -413,11 +456,18 @@ internal unsafe class ElementSelector : IDisposable
         }
     }
 
+    /// <summary>
+    /// An <see cref="AtkResNode"/> found by the Element Selector.
+    /// </summary>
     internal struct NodeResult
     {
+        /// <summary>The node itself.</summary>
         internal AtkResNode* Node;
+
+        /// <summary>A struct representing the perimeter of the node.</summary>
         internal NodeBounds NodeBounds;
 
+        /// <inheritdoc/>
         public override readonly bool Equals(object? obj)
         {
             if (obj is not NodeResult nr)

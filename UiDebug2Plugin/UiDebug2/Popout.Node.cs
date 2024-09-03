@@ -10,12 +10,20 @@ using static UiDebug2.UiDebug2;
 
 namespace UiDebug2;
 
+/// <summary>
+/// A popout window for a <see cref="ResNodeTree"/>.
+/// </summary>
 internal unsafe class NodePopoutWindow : Window, IDisposable
 {
     private readonly ResNodeTree resNodeTree;
 
     private bool firstDraw = true;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NodePopoutWindow"/> class.
+    /// </summary>
+    /// <param name="nodeTree">The node tree this window will show.</param>
+    /// <param name="windowName">The name of the window.</param>
     public NodePopoutWindow(ResNodeTree nodeTree, string windowName)
         : base(windowName)
     {
@@ -37,6 +45,7 @@ internal unsafe class NodePopoutWindow : Window, IDisposable
 
     private AtkResNode* Node => this.resNodeTree.Node;
 
+    /// <inheritdoc/>
     public override void Draw()
     {
         if (this.Node != null && this.AddonTree.ContainsNode(this.Node))
@@ -54,6 +63,7 @@ internal unsafe class NodePopoutWindow : Window, IDisposable
         }
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
     }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 
 using Dalamud.Interface.Components;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -12,10 +13,14 @@ using static Dalamud.Interface.FontAwesomeIcon;
 
 namespace UiDebug2;
 
+/// <inheritdoc cref="UiDebug2"/>
 internal unsafe partial class UiDebug2
 {
-    internal static readonly List<UnitListOption> UnitListOptions = new()
-    {
+    /// <summary>
+    /// All unit lists to check for addons.
+    /// </summary>
+    internal static readonly List<UnitListOption> UnitListOptions =
+    [
         new(13, "Loaded"),
         new(14, "Focused"),
         new(0, "Depth Layer 1"),
@@ -34,12 +39,16 @@ internal unsafe partial class UiDebug2
         new(15, "Units 16"),
         new(16, "Units 17"),
         new(17, "Units 18"),
-    };
+    ];
 
     private string addonNameSearch = string.Empty;
 
     private bool visFilter;
 
+    /// <summary>
+    /// Gets the base address for all unit lists.
+    /// </summary>
+    /// <returns>The address, if found.</returns>
     internal static AtkUnitList* GetUnitListBaseAddr() => &((UIModule*)GameGui.GetUIModule())->GetRaptureAtkModule()->RaptureAtkUnitManager.AtkUnitManager.DepthLayerOneList;
 
     private void DrawSidebar()
@@ -159,11 +168,22 @@ internal unsafe partial class UiDebug2
         }
     }
 
+    /// <summary>
+    /// A struct representing a unit list that can be browed in the sidebar.
+    /// </summary>
     internal struct UnitListOption
     {
+        /// <summary>The index of the unit list.</summary>
         internal uint Index;
+
+        /// <summary>The name of the unit list.</summary>
         internal string Name;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UnitListOption"/> struct.
+        /// </summary>
+        /// <param name="i">The index of the unit list.</param>
+        /// <param name="name">The name of the unit list.</param>
         internal UnitListOption(uint i, string name)
         {
             this.Index = i;
@@ -171,11 +191,22 @@ internal unsafe partial class UiDebug2
         }
     }
 
+    /// <summary>
+    /// A struct representing an addon that can be selected in the sidebar.
+    /// </summary>
     internal struct AddonOption
     {
+        /// <summary>The name of the addon.</summary>
         internal string Name;
+
+        /// <summary>Whether the addon is visible.</summary>
         internal bool Visible;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AddonOption"/> struct.
+        /// </summary>
+        /// <param name="name">The name of the addon.</param>
+        /// <param name="visible">Whether the addon is visible.</param>
         internal AddonOption(string name, bool visible)
         {
             this.Name = name;

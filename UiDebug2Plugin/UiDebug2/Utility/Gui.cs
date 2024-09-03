@@ -11,10 +11,32 @@ using ImGuiNET;
 using static Dalamud.Interface.ColorHelpers;
 using static ImGuiNET.ImGuiCol;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Utility;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// Miscellaneous ImGui tools used by <see cref="UiDebug2"/>.
+/// </summary>
 internal static class Gui
 {
+    /// <summary>
+    /// Begins a tree node that also displays a colored line to the left while open.
+    /// </summary>
+    /// <param name="label">The label of the tree.</param>
+    /// <param name="color">The color of the heading text.</param>
+    /// <param name="lineStart">A value representing where to begin drawing the left-side line.</param>
+    /// <param name="defOpen">Whether this tree should default to being open.</param>
+    /// <returns>true if the tree is open.</returns>
+    internal static bool NestedTreePush(string label, Vector4 color, out Vector2 lineStart, bool defOpen = false)
+    {
+        ImGui.PushStyleColor(Text, color);
+        var result = NestedTreePush(label, out lineStart, defOpen);
+        ImGui.PopStyleColor();
+        return result;
+    }
+
+    /// <inheritdoc cref="NestedTreePush(string, Vector4, out Vector2, bool)"/>
     internal static bool NestedTreePush(string label, out Vector2 lineStart, bool defOpen = false)
     {
         var imGuiTreeNodeFlags = ImGuiTreeNodeFlags.SpanFullWidth;
@@ -29,14 +51,11 @@ internal static class Gui
         return treeNodeEx;
     }
 
-    internal static bool NestedTreePush(string label, Vector4 color, out Vector2 lineStart, bool defOpen = false)
-    {
-        ImGui.PushStyleColor(Text, color);
-        var result = NestedTreePush(label, out lineStart, defOpen);
-        ImGui.PopStyleColor();
-        return result;
-    }
-
+    /// <summary>
+    /// Completes a NestedTree.
+    /// </summary>
+    /// <param name="lineStart">The starting position calculated when the tree was pushed.</param>
+    /// <param name="color">The color of the left-side line.</param>
     internal static void NestedTreePop(Vector2 lineStart, Vector4? color = null)
     {
         var lineEnd = lineStart with { Y = ImGui.GetCursorScreenPos().Y - 7 };
@@ -49,6 +68,15 @@ internal static class Gui
         ImGui.TreePop();
     }
 
+    /// <summary>
+    /// A radio-button-esque input that uses Fontawesome icon buttons.
+    /// </summary>
+    /// <typeparam name="T">The type of value being set.</typeparam>
+    /// <param name="label">The label for the inputs.</param>
+    /// <param name="val">The value being set.</param>
+    /// <param name="options">A list of all options to create buttons for.</param>
+    /// <param name="icons">A list of the icons to use for each option.</param>
+    /// <returns>true if a button is clicked.</returns>
     internal static unsafe bool IconSelectInput<T>(string label, ref T val, List<T> options, List<FontAwesomeIcon> icons)
     {
         var ret = false;
@@ -75,6 +103,30 @@ internal static class Gui
         return ret;
     }
 
+    /// <summary>
+    /// Prints field name and its value.
+    /// </summary>
+    /// <param name="fieldName">The name of the field.</param>
+    /// <param name="value">The value of the field.</param>
+    /// <param name="copy">Whether to enable click-to-copy.</param>
+    internal static void PrintFieldValuePair(string fieldName, string value, bool copy = true)
+    {
+        ImGui.Text($"{fieldName}:");
+        ImGui.SameLine();
+        if (copy)
+        {
+            ClickToCopyText(value);
+        }
+        else
+        {
+            ImGui.TextColored(new(0.6f, 0.6f, 0.6f, 1), value);
+        }
+    }
+
+    /// <summary>
+    /// Prints a set of fields and their values.
+    /// </summary>
+    /// <param name="pairs">Tuples of fieldnames and values to display.</param>
     internal static void PrintFieldValuePairs(params (string FieldName, string Value)[] pairs)
     {
         for (var i = 0; i < pairs.Length; i++)
@@ -88,24 +140,18 @@ internal static class Gui
         }
     }
 
-    internal static void PrintFieldValuePair(string label, string copyText, bool copy = true)
-    {
-        ImGui.Text($"{label}:");
-        ImGui.SameLine();
-        if (copy)
-        {
-            ClickToCopyText(copyText);
-        }
-        else
-        {
-            ImGui.TextColored(new(0.6f, 0.6f, 0.6f, 1), copyText);
-        }
-    }
-
+    /// <inheritdoc cref="PrintColor(Vector4,string)"/>
     internal static void PrintColor(ByteColor color, string fmt) => PrintColor(RgbaUintToVector4(color.RGBA), fmt);
 
+    /// <inheritdoc cref="PrintColor(Vector4,string)"/>
     internal static void PrintColor(Vector3 color, string fmt) => PrintColor(new Vector4(color, 1), fmt);
 
+    /// <summary>
+    /// Prints a text string representing a color, with a backdrop in that color.
+    /// </summary>
+    /// <param name="color">The color value.</param>
+    /// <param name="fmt">The text string to print.</param>
+    /// <remarks>Colors the text itself either white or black, depending on the luminosity of the background color.</remarks>
     internal static void PrintColor(Vector4 color, string fmt)
     {
         static double Luminosity(Vector4 vector4) =>
@@ -123,6 +169,7 @@ internal static class Gui
         ImGui.PopStyleColor(4);
     }
 
+    /// <inheritdoc cref="ImGuiHelpers.ClickToCopyText"/>
     internal static void ClickToCopyText(string text, string? textCopy = null)
     {
         ImGui.PushStyleColor(Text, new Vector4(0.6f, 0.6f, 0.6f, 1));
@@ -135,6 +182,11 @@ internal static class Gui
         }
     }
 
+    /// <summary>
+    /// Draws a tooltip that changes based on the cursor's x-position within the hovered item.
+    /// </summary>
+    /// <param name="tooltips">The text for each section.</param>
+    /// <returns>true if the item is hovered.</returns>
     internal static bool SplitTooltip(params string[] tooltips)
     {
         if (!ImGui.IsItemHovered())

@@ -7,8 +7,13 @@ using static Dalamud.Utility.Util;
 using static FFXIVClientStructs.FFXIV.Component.GUI.ComponentType;
 using static UiDebug2.Utility.Gui;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Browsing;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// A tree for an <see cref="AtkComponentNode"/> that can be printed and browsed via ImGui.
+/// </summary>
 internal unsafe class ComponentNodeTree : ResNodeTree
 {
     private readonly AtkUldManager* uldManager;
@@ -17,21 +22,28 @@ internal unsafe class ComponentNodeTree : ResNodeTree
 
     private readonly AtkComponentBase* component;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ComponentNodeTree"/> class.
+    /// </summary>
+    /// <param name="node">The node to create a tree for.</param>
+    /// <param name="addonTree">The tree representing the containing addon.</param>
     internal ComponentNodeTree(AtkResNode* node, AddonTree addonTree)
         : base(node, addonTree)
     {
         this.component = ((AtkComponentNode*)node)->Component;
-        this.uldManager = &component->UldManager;
+        this.uldManager = &this.component->UldManager;
         this.NodeType = 0;
-        this.componentType = ((AtkUldComponentInfo*)uldManager->Objects)->ComponentType;
+        this.componentType = ((AtkUldComponentInfo*)this.uldManager->Objects)->ComponentType;
     }
 
+    /// <inheritdoc/>
     private protected override string GetHeaderText()
     {
         var childCount = (int)this.uldManager->NodeListCount;
         return $"{this.componentType} Component Node{(childCount > 0 ? $" [+{childCount}]" : string.Empty)} (Node: {(nint)this.Node:X} / Comp: {(nint)this.component:X})";
     }
 
+    /// <inheritdoc/>
     private protected override void PrintNodeObject()
     {
         base.PrintNodeObject();
@@ -43,6 +55,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         ImGui.NewLine();
     }
 
+    /// <inheritdoc/>
     private protected override void PrintChildNodes()
     {
         base.PrintChildNodes();
@@ -50,12 +63,14 @@ internal unsafe class ComponentNodeTree : ResNodeTree
         PrintNodeListAsTree(this.uldManager->NodeList, count, $"Node List [{count}]:", this.AddonTree, new(0f, 0.5f, 0.8f, 1f));
     }
 
+    /// <inheritdoc/>
     private protected override void PrintFieldNames()
     {
         this.PrintFieldName((nint)this.Node, new(0, 0.85F, 1, 1));
         this.PrintFieldName((nint)this.component, new(0f, 0.5f, 0.8f, 1f));
     }
 
+    /// <inheritdoc/>
     private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         if (this.component == null)
@@ -63,6 +78,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
             return;
         }
 
+        // ReSharper disable once SwitchStatementMissingSomeEnumCasesNoDefault
         switch (this.componentType)
         {
             case TextInput:
@@ -90,8 +106,6 @@ internal unsafe class ComponentNodeTree : ResNodeTree
                     l->SelectedItemIndex++;
                 }
 
-                break;
-            default:
                 break;
         }
     }
@@ -149,7 +163,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
             case IconText:
                 ShowStruct((AtkComponentIconText*)this.component);
                 break;
-            case DragDrop:
+            case ComponentType.DragDrop:
                 ShowStruct((AtkComponentDragDrop*)this.component);
                 break;
             case GuildLeveCard:
@@ -175,7 +189,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
 
     private void PrintComponentDataObject()
     {
-        var componentData = component->UldManager.ComponentData;
+        var componentData = this.component->UldManager.ComponentData;
         PrintFieldValuePair("Data", $"{(nint)componentData:X}");
 
         if (componentData != null)
@@ -234,7 +248,7 @@ internal unsafe class ComponentNodeTree : ResNodeTree
                 case IconText:
                     ShowStruct((AtkUldComponentDataIconText*)componentData);
                     break;
-                case DragDrop:
+                case ComponentType.DragDrop:
                     ShowStruct((AtkUldComponentDataDragDrop*)componentData);
                     break;
                 case GuildLeveCard:

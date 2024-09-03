@@ -12,11 +12,15 @@ using static UiDebug2.UiDebug2;
 
 namespace UiDebug2.Browsing;
 
+/// <inheritdoc cref="AddonTree"/>
 public unsafe partial class AddonTree
 {
-    private static readonly Dictionary<string, Type?> AddonTypeDict = new();
+    private static readonly Dictionary<string, Type?> AddonTypeDict = [];
 
-    internal Dictionary<nint, List<string>> FieldNames { get; set; } = new();
+    /// <summary>
+    /// Gets or sets a collection of names corresponding to pointers documented within the addon struct.
+    /// </summary>
+    internal Dictionary<nint, List<string>> FieldNames { get; set; } = [];
 
     private object? GetAddonObj(AtkUnitBase* addon)
     {
@@ -25,10 +29,8 @@ public unsafe partial class AddonTree
             return null;
         }
 
-        if (!AddonTypeDict.ContainsKey(this.AddonName))
+        if (AddonTypeDict.TryAdd(this.AddonName, null))
         {
-            AddonTypeDict.Add(this.AddonName, null);
-
             foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
                 try
@@ -66,7 +68,7 @@ public unsafe partial class AddonTree
             return;
         }
 
-        path ??= new List<string>();
+        path ??= [];
         var baseType = obj.GetType();
 
         foreach (var field in baseType.GetFields(Static | Public | NonPublic | Instance))
@@ -76,7 +78,7 @@ public unsafe partial class AddonTree
                 try
                 {
                     var fieldAddr = baseAddr + offset.Value;
-                    var name = field.Name[0] == '_' ? char.ToUpper(field.Name[1]) + field.Name[2..] : field.Name;
+                    var name = field.Name[0] == '_' ? char.ToUpperInvariant(field.Name[1]) + field.Name[2..] : field.Name;
                     var fieldType = field.FieldType;
 
                     if (!field.IsStatic && fieldType.IsPointer)
@@ -105,9 +107,9 @@ public unsafe partial class AddonTree
         {
             try
             {
-                if (this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name }) && fieldType.DeclaringType == baseType)
+                if (this.FieldNames.TryAdd(fieldAddr, [..path, name]) && fieldType.DeclaringType == baseType)
                 {
-                    this.PopulateFieldNames(field.GetValue(obj), fieldAddr, new List<string>(path) { name });
+                    this.PopulateFieldNames(field.GetValue(obj), fieldAddr, [..path, name]);
                 }
             }
             catch (Exception ex)
@@ -137,12 +139,12 @@ public unsafe partial class AddonTree
                         var itemAddr = fieldAddr + (size * i);
                         var itemName = $"{name}[{i}]";
 
-                        this.FieldNames.TryAdd(itemAddr, new List<string>(path) { itemName });
+                        this.FieldNames.TryAdd(itemAddr, [..path, itemName]);
 
                         var item = Marshal.PtrToStructure(itemAddr, itemType);
                         if (itemType.DeclaringType == baseType)
                         {
-                            this.PopulateFieldNames(item, itemAddr, new List<string>(path) { name });
+                            this.PopulateFieldNames(item, itemAddr, [..path, name]);
                         }
                     }
                 }
@@ -173,8 +175,8 @@ public unsafe partial class AddonTree
                     return;
                 }
 
-                this.FieldNames.TryAdd(fieldAddr, new List<string>(path) { name });
-                this.FieldNames.TryAdd(pointer, new List<string>(path) { name });
+                this.FieldNames.TryAdd(fieldAddr, [..path, name]);
+                this.FieldNames.TryAdd(pointer, [..path, name]);
 
                 if (itemType?.DeclaringType != baseType || itemType.IsPointer)
                 {
@@ -182,7 +184,7 @@ public unsafe partial class AddonTree
                 }
 
                 var item = Marshal.PtrToStructure(pointer, itemType);
-                this.PopulateFieldNames(item, pointer, new List<string>(path) { name });
+                this.PopulateFieldNames(item, pointer, [..path, name]);
             }
             catch (Exception ex)
             {

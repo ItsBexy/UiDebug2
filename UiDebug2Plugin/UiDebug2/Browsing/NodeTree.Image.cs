@@ -14,21 +14,43 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
+/// <summary>
+/// A tree for an <see cref="AtkImageNode"/> that can be printed and browsed via ImGui.
+/// </summary>
 internal unsafe partial class ImageNodeTree : ResNodeTree
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ImageNodeTree"/> class.
+    /// </summary>
+    /// <param name="node">The node to create a tree for.</param>
+    /// <param name="addonTree">The tree representing the containing addon.</param>
     internal ImageNodeTree(AtkResNode* node, AddonTree addonTree)
         : base(node, addonTree)
     {
     }
 
-    private protected virtual uint PartId => ImgNode->PartId;
+    /// <summary>
+    /// Gets the part ID that this node uses.
+    /// </summary>
+    private protected virtual uint PartId => this.ImgNode->PartId;
 
-    private protected virtual AtkUldPartsList* PartsList => ImgNode->PartsList;
+    /// <summary>
+    /// Gets the parts list that this node uses.
+    /// </summary>
+    private protected virtual AtkUldPartsList* PartsList => this.ImgNode->PartsList;
 
+    /// <summary>
+    /// Gets or sets a summary of pertinent data about this <see cref="AtkImageNode"/>'s texture. Updated each time <see cref="DrawTextureAndParts"/> is called.
+    /// </summary>
     private protected TextureData TexData { get; set; }
 
     private AtkImageNode* ImgNode => (AtkImageNode*)this.Node;
 
+    /// <summary>
+    /// Draws the texture inside the window, in either of two styles.<br/><br/>
+    /// <term>Full Image</term>presents the texture in full as a spritesheet.<br/>
+    /// <term>Parts List</term>presents the individual parts as rows in a table.
+    /// </summary>
     private protected void DrawTextureAndParts()
     {
         this.TexData = new TextureData(this.PartsList, this.PartId);
@@ -76,7 +98,15 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         }
     }
 
-    private protected virtual void DrawPartOutline(uint partId, Vector2 originPos, Vector2 imagePos, Vector4 col, bool reqHover = false)
+    /// <summary>
+    /// Draws an outline of a given part within the texture.
+    /// </summary>
+    /// <param name="partId">The part ID.</param>
+    /// <param name="cursorScreenPos">The absolute position of the cursor onscreen.</param>
+    /// <param name="cursorLocalPos">The relative position of the cursor within the window.</param>
+    /// <param name="col">The color of the outline.</param>
+    /// <param name="reqHover">Whether this outline requires the user to mouse over it.</param>
+    private protected virtual void DrawPartOutline(uint partId, Vector2 cursorScreenPos, Vector2 cursorLocalPos, Vector4 col, bool reqHover = false)
     {
         var part = this.TexData.PartsList->Parts[partId];
 
@@ -85,7 +115,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         var uv = new Vector2(part.U, part.V) * hrFactor;
         var wh = new Vector2(part.Width, part.Height) * hrFactor;
 
-        var partBegin = originPos + uv;
+        var partBegin = cursorScreenPos + uv;
         var partEnd = partBegin + wh;
 
         if (reqHover && !ImGui.IsMouseHoveringRect(partBegin, partEnd))
@@ -97,18 +127,20 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
         ImGui.GetWindowDrawList().AddRect(partBegin, partEnd, RgbaVector4ToUint(col));
 
-        ImGui.SetCursorPos(imagePos + uv + new Vector2(0, -20));
+        ImGui.SetCursorPos(cursorLocalPos + uv + new Vector2(0, -20));
         ImGui.TextColored(col, $"[#{partId}]\t{part.U}, {part.V}\t{part.Width}x{part.Height}");
         ImGui.SetCursorPos(savePos);
     }
 
+    /// <inheritdoc/>
     private protected override void PrintNodeObject() => ShowStruct(this.ImgNode);
 
+    /// <inheritdoc/>
     private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         PrintFieldValuePairs(
-            ("Wrap", $"{ImgNode->WrapMode}"),
-            ("Image Flags", $"0x{ImgNode->Flags:X}"));
+            ("Wrap", $"{this.ImgNode->WrapMode}"),
+            ("Image Flags", $"0x{this.ImgNode->Flags:X}"));
         this.DrawTextureAndParts();
     }
 
@@ -125,7 +157,8 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
         if (ImGui.IsItemClicked())
         {
-            ImGui.SetClipboardText(ImGui.IsKeyDown(ImGuiKey.ModShift)
+            ImGui.SetClipboardText(
+                ImGui.IsKeyDown(ImGuiKey.ModShift)
                                        ? $"new Vector4({u}{suffix}, {v}{suffix}, {w}{suffix}, {h}{suffix})"
                                        : $"new Vector2({u}{suffix}, {v}{suffix});\nnew Vector2({w}{suffix}, {h}{suffix})");
         }
@@ -133,8 +166,8 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
     private void DrawFullTexture()
     {
-        var originPos = ImGui.GetCursorScreenPos();
-        var imagePos = ImGui.GetCursorPos();
+        var cursorScreenPos = ImGui.GetCursorScreenPos();
+        var cursorLocalPos = ImGui.GetCursorPos();
 
         ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(this.TexData.Texture->Width, this.TexData.Texture->Height));
 
@@ -145,10 +178,10 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
                 continue;
             }
 
-            this.DrawPartOutline(p, originPos, imagePos, new(0.6f, 0.6f, 0.6f, 1), true);
+            this.DrawPartOutline(p, cursorScreenPos, cursorLocalPos, new(0.6f, 0.6f, 0.6f, 1), true);
         }
 
-        this.DrawPartOutline(this.TexData.PartId, originPos, imagePos, new(0, 0.85F, 1, 1));
+        this.DrawPartOutline(this.TexData.PartId, cursorScreenPos, cursorLocalPos, new(0, 0.85F, 1, 1));
     }
 
     private void PrintPartsTable()
@@ -216,21 +249,41 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         ImGui.EndTable();
     }
 
+    /// <summary>
+    /// A summary of pertinent data about a node's texture.
+    /// </summary>
     protected struct TextureData
     {
+        /// <summary>The texture's partslist.</summary>
         public AtkUldPartsList* PartsList;
+
+        /// <summary>The number of parts in the texture.</summary>
         public uint PartCount;
+
+        /// <summary>The part ID the node is using.</summary>
         public uint PartId;
 
+        /// <summary>The texture itself.</summary>
         public Texture* Texture = null;
+
+        /// <summary>The type of texture.</summary>
         public TextureType TexType = 0;
+
+        /// <summary>The texture's file path (if <see cref="TextureType.Resource"/>, otherwise this value is null).</summary>
         public string? Path = null;
+
+        /// <summary>Whether this is a high-resolution texture.</summary>
         public bool HiRes = false;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TextureData"/> struct.
+        /// </summary>
+        /// <param name="partsList">The texture's parts list.</param>
+        /// <param name="partId">The part ID being used by the node.</param>
         public TextureData(AtkUldPartsList* partsList, uint partId)
         {
             this.PartsList = partsList;
-            this.PartCount = PartsList->PartCount;
+            this.PartCount = this.PartsList->PartCount;
             this.PartId = partId >= this.PartCount ? 0 : partId;
 
             if (this.PartsList == null)
@@ -238,7 +291,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
                 return;
             }
 
-            var asset = PartsList->Parts[this.PartId].UldAsset;
+            var asset = this.PartsList->Parts[this.PartId].UldAsset;
 
             if (asset == null)
             {

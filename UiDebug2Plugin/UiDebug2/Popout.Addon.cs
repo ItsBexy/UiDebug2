@@ -5,12 +5,22 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using UiDebug2.Browsing;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// A popout window for an <see cref="AddonTree"/>.
+/// </summary>
 internal class AddonPopoutWindow : Window, IDisposable
 {
     private readonly AddonTree addonTree;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AddonPopoutWindow"/> class.
+    /// </summary>
+    /// <param name="tree">The AddonTree this popout will show.</param>
+    /// <param name="name">the window's name.</param>
     public AddonPopoutWindow(AddonTree tree, string name)
         : base(name)
     {
@@ -28,6 +38,7 @@ internal class AddonPopoutWindow : Window, IDisposable
         this.SizeConstraints = new() { MinimumSize = new(100, 100) };
     }
 
+    /// <inheritdoc/>
     public override void Draw()
     {
         ImGui.BeginChild($"{this.WindowName}child", new(-1, -1), true);
@@ -35,6 +46,7 @@ internal class AddonPopoutWindow : Window, IDisposable
         ImGui.EndChild();
     }
 
+    /// <inheritdoc/>
     public void Dispose()
     {
     }

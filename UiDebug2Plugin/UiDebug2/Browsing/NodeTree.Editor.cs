@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -18,8 +17,12 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
+/// <inheritdoc cref="ResNodeTree"/>
 internal unsafe partial class ResNodeTree
 {
+    /// <summary>
+    /// Sets up the table for the node editor, if the "Edit" checkbox is ticked.
+    /// </summary>
     private protected void DrawNodeEditorTable()
     {
         ImGui.BeginTable($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX);
@@ -29,17 +32,20 @@ internal unsafe partial class ResNodeTree
         ImGui.EndTable();
     }
 
+    /// <summary>
+    /// Draws each row in the node editor table.
+    /// </summary>
     private protected virtual void DrawEditorRows()
     {
-        var pos = new Vector2(Node->X, Node->Y);
-        var size = new Vector2(Node->Width, Node->Height);
-        var scale = new Vector2(Node->ScaleX, Node->ScaleY);
-        var origin = new Vector2(Node->OriginX, Node->OriginY);
-        var angle = (float)((Node->Rotation * (180 / Math.PI)) + 360);
+        var pos = new Vector2(this.Node->X, this.Node->Y);
+        var size = new Vector2(this.Node->Width, this.Node->Height);
+        var scale = new Vector2(this.Node->ScaleX, this.Node->ScaleY);
+        var origin = new Vector2(this.Node->OriginX, this.Node->OriginY);
+        var angle = (float)((this.Node->Rotation * (180 / Math.PI)) + 360);
 
-        var rgba = RgbaUintToVector4(Node->Color.RGBA);
-        var mult = new Vector3(Node->MultiplyRed, Node->MultiplyGreen, Node->MultiplyBlue) / 255f;
-        var add = new Vector3(Node->AddRed, Node->AddGreen, Node->AddBlue);
+        var rgba = RgbaUintToVector4(this.Node->Color.RGBA);
+        var mult = new Vector3(this.Node->MultiplyRed, this.Node->MultiplyGreen, this.Node->MultiplyBlue) / 255f;
+        var add = new Vector3(this.Node->AddRed, this.Node->AddGreen, this.Node->AddBlue);
 
         var hov = false;
 
@@ -54,9 +60,9 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}position", ref pos, 1, default, default, "%.0f"))
         {
-            Node->X = pos.X;
-            Node->Y = pos.Y;
-            Node->DrawFlags |= 0xD;
+            this.Node->X = pos.X;
+            this.Node->Y = pos.Y;
+            this.Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("X", "Y") || ImGui.IsItemActive();
@@ -68,9 +74,9 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}size", ref size, 1, 0, default, "%.0f"))
         {
-            Node->Width = (ushort)Math.Max(size.X, 0);
-            Node->Height = (ushort)Math.Max(size.Y, 0);
-            Node->DrawFlags |= 0xD;
+            this.Node->Width = (ushort)Math.Max(size.X, 0);
+            this.Node->Height = (ushort)Math.Max(size.Y, 0);
+            this.Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("Width", "Height") || ImGui.IsItemActive();
@@ -82,9 +88,9 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}scale", ref scale, 0.05f))
         {
-            Node->ScaleX = scale.X;
-            Node->ScaleY = scale.Y;
-            Node->DrawFlags |= 0xD;
+            this.Node->ScaleX = scale.X;
+            this.Node->ScaleY = scale.Y;
+            this.Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("ScaleX", "ScaleY") || ImGui.IsItemActive();
@@ -96,9 +102,9 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}origin", ref origin, 1, default, default, "%.0f"))
         {
-            Node->OriginX = origin.X;
-            Node->OriginY = origin.Y;
-            Node->DrawFlags |= 0xD;
+            this.Node->OriginX = origin.X;
+            this.Node->OriginY = origin.Y;
+            this.Node->DrawFlags |= 0xD;
         }
 
         hov |= SplitTooltip("OriginX", "OriginY") || ImGui.IsItemActive();
@@ -115,8 +121,8 @@ internal unsafe partial class ResNodeTree
 
         if (ImGui.DragFloat($"##{(nint)this.Node:X}rotation", ref angle, 0.05f, default, default, "%.2f°"))
         {
-            Node->Rotation = (float)(angle / (180 / Math.PI));
-            Node->DrawFlags |= 0xD;
+            this.Node->Rotation = (float)(angle / (180 / Math.PI));
+            this.Node->DrawFlags |= 0xD;
         }
 
         if (ImGui.IsItemHovered())
@@ -141,7 +147,7 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.ColorEdit4($"##{(nint)this.Node:X}RGBA", ref rgba, DisplayHex))
         {
-            Node->Color = new() { RGBA = RgbaVector4ToUint(rgba) };
+            this.Node->Color = new() { RGBA = RgbaVector4ToUint(rgba) };
         }
 
         ImGui.TableNextRow();
@@ -151,9 +157,9 @@ internal unsafe partial class ResNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.ColorEdit3($"##{(nint)this.Node:X}multiplyRGB", ref mult, DisplayHex))
         {
-            Node->MultiplyRed = (byte)(mult.X * 255);
-            Node->MultiplyGreen = (byte)(mult.Y * 255);
-            Node->MultiplyBlue = (byte)(mult.Z * 255);
+            this.Node->MultiplyRed = (byte)(mult.X * 255);
+            this.Node->MultiplyGreen = (byte)(mult.Y * 255);
+            this.Node->MultiplyBlue = (byte)(mult.Z * 255);
         }
 
         ImGui.TableNextRow();
@@ -164,9 +170,9 @@ internal unsafe partial class ResNodeTree
 
         if (ImGui.DragFloat3($"##{(nint)this.Node:X}addRGB", ref add, 1, -255, 255, "%.0f"))
         {
-            Node->AddRed = (short)add.X;
-            Node->AddGreen = (short)add.Y;
-            Node->AddBlue = (short)add.Z;
+            this.Node->AddRed = (short)add.X;
+            this.Node->AddGreen = (short)add.Y;
+            this.Node->AddBlue = (short)add.Z;
         }
 
         SplitTooltip("+/- Red", "+/- Green", "+/- Blue");
@@ -177,20 +183,22 @@ internal unsafe partial class ResNodeTree
         ImGui.SetCursorPosX(ImGui.GetCursorPosX() - (4 * GlobalScale));
         if (ImGui.ColorEdit3($"##{(nint)this.Node:X}addRGBPicker", ref addTransformed, NoAlpha | NoInputs))
         {
-            Node->AddRed = (short)Math.Floor((addTransformed.X * 510f) - 255f);
-            Node->AddGreen = (short)Math.Floor((addTransformed.Y * 510f) - 255f);
-            Node->AddBlue = (short)Math.Floor((addTransformed.Z * 510f) - 255f);
+            this.Node->AddRed = (short)Math.Floor((addTransformed.X * 510f) - 255f);
+            this.Node->AddGreen = (short)Math.Floor((addTransformed.Y * 510f) - 255f);
+            this.Node->AddBlue = (short)Math.Floor((addTransformed.Z * 510f) - 255f);
         }
     }
 }
 
+/// <inheritdoc cref="CounterNodeTree"/>
 internal unsafe partial class CounterNodeTree
 {
+    /// <inheritdoc/>
     private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
-        var str = CntNode->NodeText.ToString();
+        var str = this.CntNode->NodeText.ToString();
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
@@ -200,21 +208,23 @@ internal unsafe partial class CounterNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.InputText($"##{(nint)this.Node:X}counterEdit", ref str, 512, EnterReturnsTrue))
         {
-            CntNode->SetText(str);
+            this.CntNode->SetText(str);
         }
     }
 }
 
+/// <inheritdoc cref="ImageNodeTree"/>
 internal unsafe partial class ImageNodeTree
 {
     private static int TexDisplayStyle { get; set; }
 
+    /// <inheritdoc/>
     private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
         var partId = (int)this.PartId;
-        var partcount = ImgNode->PartsList->PartCount;
+        var partcount = this.ImgNode->PartsList->PartCount;
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
@@ -233,13 +243,15 @@ internal unsafe partial class ImageNodeTree
                 partId = (int)(partcount - 1);
             }
 
-            ImgNode->PartId = (ushort)partId;
+            this.ImgNode->PartId = (ushort)partId;
         }
     }
 }
 
+/// <inheritdoc cref="NineGridNodeTree"/>
 internal unsafe partial class NineGridNodeTree
 {
+    /// <inheritdoc/>
     private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
@@ -254,8 +266,8 @@ internal unsafe partial class NineGridNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}ngOffsetLR", ref lr, 1, 0))
         {
-            NgNode->LeftOffset = (short)Math.Max(0, lr.X);
-            NgNode->RightOffset = (short)Math.Max(0, lr.Y);
+            this.NgNode->LeftOffset = (short)Math.Max(0, lr.X);
+            this.NgNode->RightOffset = (short)Math.Max(0, lr.Y);
         }
 
         SplitTooltip("Left", "Right");
@@ -266,30 +278,32 @@ internal unsafe partial class NineGridNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.DragFloat2($"##{(nint)this.Node:X}ngOffsetTB", ref tb, 1, 0))
         {
-            NgNode->TopOffset = (short)Math.Max(0, tb.X);
-            NgNode->BottomOffset = (short)Math.Max(0, tb.Y);
+            this.NgNode->TopOffset = (short)Math.Max(0, tb.X);
+            this.NgNode->BottomOffset = (short)Math.Max(0, tb.Y);
         }
 
         SplitTooltip("Top", "Bottom");
     }
 }
 
+/// <inheritdoc cref="TextNodeTree"/>
 internal unsafe partial class TextNodeTree
 {
-    private static readonly List<FontType> FontList = Enum.GetValues<FontType>().ToList();
+    private static readonly List<FontType> FontList = [.. Enum.GetValues<FontType>()];
 
     private static readonly string[] FontNames = Enum.GetNames<FontType>();
 
+    /// <inheritdoc/>
     private protected override void DrawEditorRows()
     {
         base.DrawEditorRows();
 
-        var text = TxtNode->NodeText.ToString();
-        var fontIndex = FontList.IndexOf(TxtNode->FontType);
-        int fontSize = TxtNode->FontSize;
-        var alignment = TxtNode->AlignmentType;
-        var textColor = RgbaUintToVector4(TxtNode->TextColor.RGBA);
-        var edgeColor = RgbaUintToVector4(TxtNode->EdgeColor.RGBA);
+        var text = this.TxtNode->NodeText.ToString();
+        var fontIndex = FontList.IndexOf(this.TxtNode->FontType);
+        int fontSize = this.TxtNode->FontSize;
+        var alignment = this.TxtNode->AlignmentType;
+        var textColor = RgbaUintToVector4(this.TxtNode->TextColor.RGBA);
+        var edgeColor = RgbaUintToVector4(this.TxtNode->EdgeColor.RGBA);
 
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
@@ -298,7 +312,7 @@ internal unsafe partial class TextNodeTree
         ImGui.SetNextItemWidth(Math.Max(ImGui.GetWindowContentRegionMax().X - ImGui.GetCursorPosX() - 50f, 150));
         if (ImGui.InputText($"##{(nint)this.Node:X}textEdit", ref text, 512, EnterReturnsTrue))
         {
-            TxtNode->SetText(text);
+            this.TxtNode->SetText(text);
         }
 
         ImGui.TableNextRow();
@@ -308,7 +322,7 @@ internal unsafe partial class TextNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.Combo($"##{(nint)this.Node:X}fontType", ref fontIndex, FontNames, FontList.Count))
         {
-            TxtNode->FontType = FontList[fontIndex];
+            this.TxtNode->FontType = FontList[fontIndex];
         }
 
         ImGui.TableNextRow();
@@ -318,7 +332,7 @@ internal unsafe partial class TextNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.InputInt($"##{(nint)this.Node:X}fontSize", ref fontSize, 1, 10))
         {
-            TxtNode->FontSize = (byte)fontSize;
+            this.TxtNode->FontSize = (byte)fontSize;
         }
 
         ImGui.TableNextRow();
@@ -327,7 +341,7 @@ internal unsafe partial class TextNodeTree
         ImGui.TableNextColumn();
         if (InputAlignment($"##{(nint)this.Node:X}alignment", ref alignment))
         {
-            TxtNode->AlignmentType = alignment;
+            this.TxtNode->AlignmentType = alignment;
         }
 
         ImGui.TableNextRow();
@@ -337,7 +351,7 @@ internal unsafe partial class TextNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.ColorEdit4($"##{(nint)this.Node:X}TextRGB", ref textColor, DisplayHex))
         {
-            TxtNode->TextColor = new() { RGBA = RgbaVector4ToUint(textColor) };
+            this.TxtNode->TextColor = new() { RGBA = RgbaVector4ToUint(textColor) };
         }
 
         ImGui.TableNextRow();
@@ -347,7 +361,7 @@ internal unsafe partial class TextNodeTree
         ImGui.SetNextItemWidth(150);
         if (ImGui.ColorEdit4($"##{(nint)this.Node:X}EdgeRGB", ref edgeColor, DisplayHex))
         {
-            TxtNode->EdgeColor = new() { RGBA = RgbaVector4ToUint(edgeColor) };
+            this.TxtNode->EdgeColor = new() { RGBA = RgbaVector4ToUint(edgeColor) };
         }
     }
 
@@ -356,8 +370,8 @@ internal unsafe partial class TextNodeTree
         var hAlign = (int)alignment % 3;
         var vAlign = ((int)alignment - hAlign) / 3;
 
-        var hAlignInput = IconSelectInput($"{label}H", ref hAlign, new() { 0, 1, 2 }, new() { AlignLeft, AlignCenter, AlignRight });
-        var vAlignInput = IconSelectInput($"{label}V", ref vAlign, new() { 0, 1, 2 }, new() { ArrowsUpToLine, GripLines, ArrowsDownToLine });
+        var hAlignInput = IconSelectInput($"{label}H", ref hAlign, [0, 1, 2], [AlignLeft, AlignCenter, AlignRight]);
+        var vAlignInput = IconSelectInput($"{label}V", ref vAlign, [0, 1, 2], [ArrowsUpToLine, GripLines, ArrowsDownToLine]);
 
         if (hAlignInput || vAlignInput)
         {

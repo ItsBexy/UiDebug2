@@ -18,21 +18,31 @@ using static UiDebug2.Utility.Gui;
 // ReSharper disable SuggestBaseTypeForParameter
 namespace UiDebug2.Browsing;
 
+/// <summary>
+/// A struct allowing a node's animation timeline to be printed and browsed.
+/// </summary>
 public unsafe partial struct TimelineTree
 {
     private AtkResNode* node;
 
-    public TimelineTree(AtkResNode* node)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TimelineTree"/> struct.
+    /// </summary>
+    /// <param name="node">The node whose timelines are to be displayed.</param>
+    internal TimelineTree(AtkResNode* node)
     {
         this.node = node;
     }
 
-    private AtkTimeline* NodeTimeline => node->Timeline;
+    private AtkTimeline* NodeTimeline => this.node->Timeline;
 
-    private AtkTimelineResource* Resource => NodeTimeline->Resource;
+    private AtkTimelineResource* Resource => this.NodeTimeline->Resource;
 
-    private AtkTimelineAnimation* ActiveAnimation => NodeTimeline->ActiveAnimation;
+    private AtkTimelineAnimation* ActiveAnimation => this.NodeTimeline->ActiveAnimation;
 
+    /// <summary>
+    /// Prints out this timeline tree within a window.
+    /// </summary>
     internal void Print()
     {
         if (this.NodeTimeline == null)
@@ -40,7 +50,7 @@ public unsafe partial struct TimelineTree
             return;
         }
 
-        var count = Resource->AnimationCount;
+        var count = this.Resource->AnimationCount;
 
         if (count > 0)
         {
@@ -53,18 +63,18 @@ public unsafe partial struct TimelineTree
                 ShowStruct(this.NodeTimeline);
 
                 PrintFieldValuePairs(
-                    ("Id", $"{NodeTimeline->Resource->Id}"),
-                    ("Parent Time", $"{NodeTimeline->ParentFrameTime:F2} ({NodeTimeline->ParentFrameTime * 30:F0})"),
-                    ("Frame Time", $"{NodeTimeline->FrameTime:F2} ({NodeTimeline->FrameTime * 30:F0})"));
+                    ("Id", $"{this.NodeTimeline->Resource->Id}"),
+                    ("Parent Time", $"{this.NodeTimeline->ParentFrameTime:F2} ({this.NodeTimeline->ParentFrameTime * 30:F0})"),
+                    ("Frame Time", $"{this.NodeTimeline->FrameTime:F2} ({this.NodeTimeline->FrameTime * 30:F0})"));
 
-                PrintFieldValuePairs(("Active Label Id", $"{NodeTimeline->ActiveLabelId}"), ("Duration", $"{NodeTimeline->LabelFrameIdxDuration}"), ("End Frame", $"{NodeTimeline->LabelEndFrameIdx}"));
+                PrintFieldValuePairs(("Active Label Id", $"{this.NodeTimeline->ActiveLabelId}"), ("Duration", $"{this.NodeTimeline->LabelFrameIdxDuration}"), ("End Frame", $"{this.NodeTimeline->LabelEndFrameIdx}"));
                 ImGui.TextColored(new(0.6f, 0.6f, 0.6f, 1), "Animation List");
 
                 for (var a = 0; a < count; a++)
                 {
-                    var animation = Resource->Animations[a];
-                    var isActive = this.ActiveAnimation != null && animation.Equals(*this.ActiveAnimation);
-                    this.PrintAnimation(animation, a, isActive, (nint)(NodeTimeline->Resource->Animations + (a * sizeof(AtkTimelineAnimation))));
+                    var animation = this.Resource->Animations[a];
+                    var isActive = this.ActiveAnimation != null && &animation == this.ActiveAnimation;
+                    this.PrintAnimation(animation, a, isActive, (nint)(this.NodeTimeline->Resource->Animations + (a * sizeof(AtkTimelineAnimation))));
                 }
 
                 ImGui.TreePop();
@@ -354,11 +364,11 @@ public unsafe partial struct TimelineTree
 
         GetTintColumns(keyGroups[4], columns);
 
-        if (node->Type is Image or NineGrid or ClippingMask)
+        if (this.node->Type is Image or NineGrid or ClippingMask)
         {
             GetPartIdColumn(keyGroups[5], columns);
         }
-        else if (node->Type == Text)
+        else if (this.node->Type == Text)
         {
             GetTextColorColumn(keyGroups[5], columns);
         }

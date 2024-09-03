@@ -15,8 +15,16 @@ using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
 
+/// <summary>
+/// A tree for an <see cref="AtkTextNode"/> that can be printed and browsed via ImGui.
+/// </summary>
 internal unsafe partial class TextNodeTree : ResNodeTree
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TextNodeTree"/> class.
+    /// </summary>
+    /// <param name="node">The node to create a tree for.</param>
+    /// <param name="addonTree">The tree representing the containing addon.</param>
     internal TextNodeTree(AtkResNode* node, AddonTree addonTree)
         : base(node, addonTree)
     {
@@ -24,10 +32,12 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
     private AtkTextNode* TxtNode => (AtkTextNode*)this.Node;
 
-    private Utf8String NodeText => TxtNode->NodeText;
+    private Utf8String NodeText => this.TxtNode->NodeText;
 
+    /// <inheritdoc/>
     private protected override void PrintNodeObject() => ShowStruct(this.TxtNode);
 
+    /// <inheritdoc/>
     private protected override void PrintFieldsForNodeType(bool isEditorOpen = false)
     {
         if (isEditorOpen)
@@ -41,22 +51,30 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 #pragma warning disable
         try
         {
-            ImGuiHelpers.SeStringWrapped(NodeText.AsSpan(), new SeStringDrawParams { Color = TxtNode->TextColor.RGBA, EdgeColor = TxtNode->EdgeColor.RGBA, ForceEdgeColor = true, EdgeStrength = 1f });
+            var style = new SeStringDrawParams
+            {
+                Color = this.TxtNode->TextColor.RGBA,
+                EdgeColor = this.TxtNode->EdgeColor.RGBA,
+                ForceEdgeColor = true,
+                EdgeStrength = 1f
+            };
+
+            ImGuiHelpers.SeStringWrapped(this.NodeText.AsSpan(), style);
         }
         catch
         {
-            ImGui.Text(Marshal.PtrToStringAnsi(new(NodeText.StringPtr)) ?? "");
+            ImGui.Text(Marshal.PtrToStringAnsi(new(this.NodeText.StringPtr)) ?? "");
         }
 #pragma warning restore
 
         PrintFieldValuePairs(
-            ("Font", $"{TxtNode->FontType}"),
-            ("Font Size", $"{TxtNode->FontSize}"),
-            ("Alignment", $"{TxtNode->AlignmentType}"));
+            ("Font", $"{this.TxtNode->FontType}"),
+            ("Font Size", $"{this.TxtNode->FontSize}"),
+            ("Alignment", $"{this.TxtNode->AlignmentType}"));
 
-        PrintColor(TxtNode->TextColor, $"Text Color: {SwapEndianness(TxtNode->TextColor.RGBA):X8}");
+        PrintColor(this.TxtNode->TextColor, $"Text Color: {SwapEndianness(this.TxtNode->TextColor.RGBA):X8}");
         ImGui.SameLine();
-        PrintColor(TxtNode->EdgeColor, $"Edge Color: {SwapEndianness(TxtNode->EdgeColor.RGBA):X8}");
+        PrintColor(this.TxtNode->EdgeColor, $"Edge Color: {SwapEndianness(this.TxtNode->EdgeColor.RGBA):X8}");
 
         this.PrintPayloads();
     }

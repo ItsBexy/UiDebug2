@@ -5,10 +5,19 @@ using UiDebug2.Utility;
 using static ImGuiNET.ImGuiTableColumnFlags;
 using static ImGuiNET.ImGuiTableFlags;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Browsing;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
+/// <summary>
+/// Class that prints the events table for a node, where applicable.
+/// </summary>
 public static class Events
 {
+    /// <summary>
+    /// Prints out each <see cref="AtkEventManager.Event"/> for a given node.
+    /// </summary>
+    /// <param name="node">The node to print events for.</param>
     internal static unsafe void PrintEvents(AtkResNode* node)
     {
         var evt = node->AtkEventManager.Event;
