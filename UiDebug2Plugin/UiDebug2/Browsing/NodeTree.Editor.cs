@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
+using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Utility;
@@ -25,11 +26,11 @@ internal unsafe partial class ResNodeTree
     /// </summary>
     private protected void DrawNodeEditorTable()
     {
-        ImGui.BeginTable($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX);
+        var tab = ImRaii.Table($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX);
 
         this.DrawEditorRows();
 
-        ImGui.EndTable();
+        tab.Dispose();
     }
 
     /// <summary>

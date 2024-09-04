@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -82,7 +83,7 @@ internal partial class UiDebug2 : IDisposable
     private void DrawMainPanel()
     {
         ImGui.SameLine();
-        ImGui.BeginChild("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar);
+        var ch = ImRaii.Child("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar);
 
         if (this.elementSelector.Active)
         {
@@ -104,6 +105,6 @@ internal partial class UiDebug2 : IDisposable
             }
         }
 
-        ImGui.EndChild();
+        ch.Dispose();
     }
 }

@@ -1,13 +1,14 @@
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.ImGuiSeStringRenderer;
 using Dalamud.Interface.Utility;
+using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using UiDebug2.Utility;
 
 using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Utility.Util;
@@ -81,7 +82,9 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
     private void PrintPayloads()
     {
-        if (ImGui.TreeNode($"Text Payloads##{(nint)this.Node:X}"))
+        var tree = ImRaii.TreeNode($"Text Payloads##{(nint)this.Node:X}");
+
+        if (tree)
         {
             var utf8String = this.NodeText;
             var seStringBytes = new byte[utf8String.BufUsed];
@@ -100,15 +103,7 @@ internal unsafe partial class TextNodeTree : ResNodeTree
                 {
                     case PayloadType.RawText when payload is TextPayload tp:
                     {
-                        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-                        ImGui.Text("Raw Text: '");
-                        ImGui.SameLine();
-                        ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.6f, 0.6f, 0.6f, 1));
-                        ImGui.Text(tp.Text);
-                        ImGui.PopStyleColor();
-                        ImGui.SameLine();
-                        ImGui.PopStyleVar();
-                        ImGui.Text("'");
+                        Gui.PrintFieldValuePair("Raw Text", tp.Text ?? string.Empty);
                         break;
                     }
 
@@ -119,8 +114,8 @@ internal unsafe partial class TextNodeTree : ResNodeTree
                     }
                 }
             }
-
-            ImGui.TreePop();
         }
+
+        tree.Dispose();
     }
 }

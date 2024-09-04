@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
+using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -10,6 +11,7 @@ using static Dalamud.Utility.Util;
 using static FFXIVClientStructs.FFXIV.Component.GUI.TextureType;
 using static ImGuiNET.ImGuiTableColumnFlags;
 using static ImGuiNET.ImGuiTableFlags;
+using static ImGuiNET.ImGuiTreeNodeFlags;
 using static UiDebug2.Utility.Gui;
 
 namespace UiDebug2.Browsing;
@@ -60,7 +62,9 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
             return;
         }
 
-        if (NestedTreePush($"Texture##texture{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", out _))
+        var tree = ImRaii.TreeNode($"Texture##texture{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", SpanFullWidth);
+
+        if (tree)
         {
             PrintFieldValuePairs(
                 ("Texture Type", $"{this.TexData.TexType}"),
@@ -93,9 +97,9 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
             {
                 this.DrawFullTexture();
             }
-
-            ImGui.TreePop();
         }
+
+        tree.Dispose();
     }
 
     /// <summary>
@@ -186,7 +190,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
     private void PrintPartsTable()
     {
-        ImGui.BeginTable($"partsTable##{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", 3, Borders | RowBg | Reorderable);
+        var tab = ImRaii.Table($"partsTable##{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", 3, Borders | RowBg | Reorderable);
         ImGui.TableSetupColumn("Part ID", WidthFixed);
         ImGui.TableSetupColumn("Part Texture", WidthFixed);
         ImGui.TableSetupColumn("Coordinates", WidthFixed);
@@ -201,17 +205,8 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         {
             ImGui.TableNextColumn();
 
-            if (i == this.TexData.PartId)
-            {
-                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0, 0.85F, 1, 1));
-            }
-
-            ImGui.Text($"#{i.ToString().PadLeft(this.TexData.PartCount.ToString().Length, '0')}");
-
-            if (i == this.TexData.PartId)
-            {
-                ImGui.PopStyleColor(1);
-            }
+            var col = i == this.TexData.PartId ? new Vector4(0, 0.85F, 1, 1) : new(1);
+            ImGui.TextColored(col, $"#{i.ToString().PadLeft(this.TexData.PartCount.ToString().Length, '0')}");
 
             ImGui.TableNextColumn();
 
@@ -246,7 +241,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
             PrintPartCoords(u / tWidth, v / tWidth, (u + width) / tWidth, (v + height) / tHeight, true, true);
         }
 
-        ImGui.EndTable();
+        tab.Dispose();
     }
 
     /// <summary>

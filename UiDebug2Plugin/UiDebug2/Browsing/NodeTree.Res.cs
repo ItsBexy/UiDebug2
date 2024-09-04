@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 
 using Dalamud.Interface.Components;
+using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Utility;
@@ -11,6 +12,8 @@ using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Interface.FontAwesomeIcon;
 using static Dalamud.Utility.Util;
 using static FFXIVClientStructs.FFXIV.Component.GUI.NodeFlags;
+using static ImGuiNET.ImGuiCol;
+using static ImGuiNET.ImGuiTreeNodeFlags;
 using static UiDebug2.Browsing.Events;
 using static UiDebug2.ElementSelector;
 using static UiDebug2.UiDebug2;
@@ -118,15 +121,25 @@ internal unsafe partial class ResNodeTree : IDisposable
             return;
         }
 
-        ImGui.PushStyleColor(ImGuiCol.Text, color);
-        var treeOpened = NestedTreePush($"{label}##{(nint)nodeList:X}", color, out var lineStart);
-        ImGui.PopStyleColor();
+        var c = ImRaii.PushColor(Text, color);
+        var tree = ImRaii.TreeNode($"{label}##{(nint)nodeList:X}", SpanFullWidth);
+        c.Pop();
 
-        if (treeOpened)
+        if (tree)
         {
+            var lineStart = ImGui.GetCursorScreenPos() + new Vector2(-10, 2);
+
             PrintNodeList(nodeList, count, addonTree);
-            NestedTreePop(lineStart, color);
+
+            var lineEnd = lineStart with { Y = ImGui.GetCursorScreenPos().Y - 7 };
+
+            if (lineStart.Y < lineEnd.Y)
+            {
+                ImGui.GetWindowDrawList().AddLine(lineStart, lineEnd, RgbaVector4ToUint(color), 1);
+            }
         }
+
+        tree.Dispose();
     }
 
     /// <summary>
@@ -251,7 +264,7 @@ internal unsafe partial class ResNodeTree : IDisposable
     private void PrintTree(uint? index, bool forceOpen = false)
     {
         var visible = this.Node->NodeFlags.HasFlag(Visible);
-
+        var label = $"{(index == null ? string.Empty : $"[{index}] ")}[#{this.Node->NodeId}]###{(nint)this.Node:X}nodeTree";
         var displayColor = !visible ? new Vector4(0.8f, 0.8f, 0.8f, 1) :
                            this.Node->Color.A == 0 ? new(0.015f, 0.575f, 0.355f, 1) :
                            new(0.1f, 1f, 0.1f, 1f);
@@ -261,9 +274,8 @@ internal unsafe partial class ResNodeTree : IDisposable
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
         }
 
-        ImGui.PushStyleColor(ImGuiCol.Text, displayColor);
-
-        var treePush = NestedTreePush($"{(index == null ? string.Empty : $"[{index}] ")}[#{this.Node->NodeId}]###{(nint)this.Node:X}nodeTree", displayColor, out var lineStart);
+        var col = ImRaii.PushColor(Text, displayColor);
+        var tree = ImRaii.TreeNode(label, SpanFullWidth);
 
         if (ImGui.IsItemHovered())
         {
@@ -273,10 +285,11 @@ internal unsafe partial class ResNodeTree : IDisposable
         ImGui.SameLine();
         this.WriteTreeHeading();
 
-        ImGui.PopStyleColor();
+        col.Pop();
 
-        if (treePush)
+        if (tree)
         {
+            var lineStart = ImGui.GetCursorScreenPos() + new Vector2(-10, 2);
             try
             {
                 PrintFieldValuePair("Node", $"{(nint)this.Node:X}");
@@ -310,8 +323,15 @@ internal unsafe partial class ResNodeTree : IDisposable
                 ImGui.TextDisabled($"Couldn't display node!\n\n{ex}");
             }
 
-            NestedTreePop(lineStart, displayColor);
+            var lineEnd = lineStart with { Y = ImGui.GetCursorScreenPos().Y - 7 };
+
+            if (lineStart.Y < lineEnd.Y)
+            {
+                ImGui.GetWindowDrawList().AddLine(lineStart, lineEnd, RgbaVector4ToUint(displayColor), 1);
+            }
         }
+
+        tree.Dispose();
     }
 
     private void DrawBasicControls()

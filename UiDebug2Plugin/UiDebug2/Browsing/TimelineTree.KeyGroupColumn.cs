@@ -6,7 +6,7 @@ using ImGuiNET;
 namespace UiDebug2.Browsing;
 
 /// <inheritdoc cref="TimelineTree"/>
-public partial struct TimelineTree
+public readonly partial struct TimelineTree
 {
     /// <summary>
     /// An interface for retrieving and printing the contents of a given column in an animation timeline table.

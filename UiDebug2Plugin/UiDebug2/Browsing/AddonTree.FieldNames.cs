@@ -103,6 +103,8 @@ public unsafe partial class AddonTree
             }
         }
 
+        return;
+
         void ParseExplicitField(nint fieldAddr, FieldInfo field, MemberInfo fieldType, string name)
         {
             try
