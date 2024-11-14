@@ -82,7 +82,7 @@ internal unsafe class ElementSelector : IDisposable
     /// </summary>
     internal void DrawInterface()
     {
-        using (ImRaii.Child("###sidebar_elementSelector", new(250, 0), true))
+        using (ImRaii.Child("###sidebar_elementSelector", new(250, -1), true))
         {
             using (ImRaii.PushFont(IconFont))
             {

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Browsing;
+
 using static ImGuiNET.ImGuiWindowFlags;
 
 namespace UiDebug2;

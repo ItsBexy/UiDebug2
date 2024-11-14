@@ -1,10 +1,12 @@
 using System;
 using System.Numerics;
+
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Browsing;
+
 using static UiDebug2.UiDebug2;
 
 namespace UiDebug2;

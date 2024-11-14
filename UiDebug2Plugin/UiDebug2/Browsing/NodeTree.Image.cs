@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;

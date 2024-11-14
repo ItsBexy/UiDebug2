@@ -1,11 +1,12 @@
 using System.Numerics;
-using Dalamud.Interface.Utility;
+
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
-using UiDebug2.Utility;
+
 using static ImGuiNET.ImGuiTableColumnFlags;
 using static ImGuiNET.ImGuiTableFlags;
+
 using ImGuiHelpers = UiDebug2.Utility.ImGuiHelpers;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure

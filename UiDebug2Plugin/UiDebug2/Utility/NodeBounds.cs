@@ -135,7 +135,7 @@ public unsafe struct NodeBounds
             if (p.Y > Min(p1.Y, p2.Y) &&
                 p.Y <= Max(p1.Y, p2.Y) &&
                 p.X <= Max(p1.X, p2.X) &&
-                (p1.X.Equals(p2.X) || p.X <= (((p.Y - p1.Y) * (p2.X - p1.X)) / (p2.Y - p1.Y)) + p1.X))
+                (p1.X.Equals(p2.X) || p.X <= ((p.Y - p1.Y) * (p2.X - p1.X) / (p2.Y - p1.Y)) + p1.X))
             {
                 inside = !inside;
             }
@@ -150,8 +150,9 @@ public unsafe struct NodeBounds
         var sinR = Sin(r);
         var d = (p - o) * s;
 
-        return new(o.X + (d.X * cosR) - (d.Y * sinR),
-                   o.Y + (d.X * sinR) + (d.Y * cosR));
+        return new(
+            o.X + (d.X * cosR) - (d.Y * sinR),
+            o.Y + (d.X * sinR) + (d.Y * cosR));
     }
 
     private void TransformPoints(AtkResNode* transformNode)

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 using ImGuiNET;
@@ -7,6 +8,7 @@ namespace Dalamud.Interface.Components;
 /// <summary>
 /// Component for toggle buttons.
 /// </summary>
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
 public static partial class ImGuiComponents
 {
     /// <summary>
@@ -25,9 +27,12 @@ public static partial class ImGuiComponents
         var width = height * 1.55f;
         var radius = height * 0.50f;
 
-        // TODO: animate
+
+#pragma warning disable SA1512 // Single-line comments should not be followed by blank line
+                              // TODO: animate
 
         var changed = false;
+#pragma warning restore SA1512 // Single-line comments should not be followed by blank line
         ImGui.InvisibleButton(id, new Vector2(width, height));
         if (ImGui.IsItemClicked())
         {

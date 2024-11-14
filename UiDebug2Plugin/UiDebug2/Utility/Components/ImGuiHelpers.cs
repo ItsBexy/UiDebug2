@@ -1,33 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.Unicode;
 
-using Dalamud.Configuration.Internal;
-using Dalamud.Game.ClientState.Keys;
-using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface;
-using Dalamud.Interface.ImGuiSeStringRenderer;
-using Dalamud.Interface.ImGuiSeStringRenderer.Internal;
-using Dalamud.Interface.ManagedFontAtlas;
-using Dalamud.Interface.ManagedFontAtlas.Internals;
 using Dalamud.Interface.Utility.Raii;
 
 using ImGuiNET;
-using ImGuiScene;
 
+#pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Utility;
+#pragma warning restore IDE0130 // Namespace does not match folder structure
 
 /// <summary>
 /// Class containing various helper methods for use with ImGui inside Dalamud.
 /// </summary>
-public static partial class ImGuiHelpers
+public static class ImGuiHelpers
 {
-  
     /// <summary>
     /// Print out text that can be copied when clicked.
     /// </summary>
@@ -69,7 +55,4 @@ public static partial class ImGuiHelpers
             ImGui.SetClipboardText(textCopy);
         }
     }
-
-
-
 }

@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 using Dalamud.Interface.Utility.Raii;
 
 using FFXIVClientStructs.FFXIV.Common.Math;
@@ -9,6 +11,7 @@ namespace Dalamud.Interface.Components;
 /// <summary>
 /// Class containing various methods providing ImGui components.
 /// </summary>
+[SuppressMessage("ReSharper", "UnusedMember.Global")]
 public static partial class ImGuiComponents
 {
     /// <summary>

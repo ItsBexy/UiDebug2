@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Interface.ImGuiSeStringRenderer;
-using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -13,6 +12,7 @@ using UiDebug2.Utility;
 using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Utility.Util;
 using static UiDebug2.Utility.Gui;
+
 using ImGuiHelpers = Dalamud.Interface.Utility.ImGuiHelpers;
 
 namespace UiDebug2.Browsing;

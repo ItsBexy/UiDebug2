@@ -7,6 +7,7 @@ using static UiDebug2.UiDebug2Plugin.Service;
 
 namespace UiDebug2;
 
+// ReSharper disable once MemberCanBeFileLocal
 internal sealed class UiDebug2Plugin : IDalamudPlugin
 {
     internal const string CommandName = "/uidebug2";
