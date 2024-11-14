@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
@@ -26,11 +26,10 @@ internal unsafe partial class ResNodeTree
     /// </summary>
     private protected void DrawNodeEditorTable()
     {
-        var tab = ImRaii.Table($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX);
-
-        this.DrawEditorRows();
-
-        tab.Dispose();
+        using (ImRaii.Table($"###Editor{(nint)this.Node}", 2, SizingStretchProp | NoHostExtendX))
+        {
+            this.DrawEditorRows();
+        }
     }
 
     /// <summary>
@@ -371,8 +370,8 @@ internal unsafe partial class TextNodeTree
         var hAlign = (int)alignment % 3;
         var vAlign = ((int)alignment - hAlign) / 3;
 
-        var hAlignInput = IconSelectInput($"{label}H", ref hAlign, [0, 1, 2], [AlignLeft, AlignCenter, AlignRight]);
-        var vAlignInput = IconSelectInput($"{label}V", ref vAlign, [0, 1, 2], [ArrowsUpToLine, GripLines, ArrowsDownToLine]);
+        var hAlignInput = ImGuiComponents.IconButtonSelect($"{label}H", ref hAlign, [AlignLeft, AlignCenter, AlignRight], [0, 1, 2], 3u, new(25, 0));
+        var vAlignInput = ImGuiComponents.IconButtonSelect($"{label}V", ref vAlign, [ArrowsUpToLine, GripLines, ArrowsDownToLine], [0, 1, 2], 3u, new(25, 0));
 
         if (hAlignInput || vAlignInput)
         {

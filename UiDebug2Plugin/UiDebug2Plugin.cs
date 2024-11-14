@@ -24,7 +24,7 @@ internal sealed class UiDebug2Plugin : IDalamudPlugin
 
         WindowSystem.AddWindow(this.DebugWindow);
 
-        CommandManager.AddHandler(CommandName, new(this.OnCommand) { HelpMessage = "UI Debug 2", });
+        CommandManager.AddHandler(CommandName, new(this.OnCommand) { HelpMessage = "UI Debug 2" });
 
         PluginInterface.UiBuilder.Draw += DrawUI;
 

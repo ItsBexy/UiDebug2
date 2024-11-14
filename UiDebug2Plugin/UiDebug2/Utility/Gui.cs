@@ -22,41 +22,6 @@ namespace UiDebug2.Utility;
 internal static class Gui
 {
     /// <summary>
-    /// A radio-button-esque input that uses Fontawesome icon buttons.
-    /// </summary>
-    /// <typeparam name="T">The type of value being set.</typeparam>
-    /// <param name="label">The label for the inputs.</param>
-    /// <param name="val">The value being set.</param>
-    /// <param name="options">A list of all options to create buttons for.</param>
-    /// <param name="icons">A list of the icons to use for each option.</param>
-    /// <returns>true if a button is clicked.</returns>
-    internal static unsafe bool IconSelectInput<T>(string label, ref T val, List<T> options, List<FontAwesomeIcon> icons)
-    {
-        var ret = false;
-        for (var i = 0; i < options.Count; i++)
-        {
-            var option = options[i];
-            var icon = icons[i];
-
-            if (i > 0)
-            {
-                ImGui.SameLine();
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() - ((ImGui.GetFontSize() / -6f) + 7f));
-            }
-
-            var color = *ImGui.GetStyleColorVec4(val is not null && val.Equals(option) ? ButtonActive : Button);
-
-            if (ImGuiComponents.IconButton($"{label}{option}{i}", icon, color))
-            {
-                val = option;
-                ret = true;
-            }
-        }
-
-        return ret;
-    }
-
-    /// <summary>
     /// Prints field name and its value.
     /// </summary>
     /// <param name="fieldName">The name of the field.</param>
@@ -64,15 +29,16 @@ internal static class Gui
     /// <param name="copy">Whether to enable click-to-copy.</param>
     internal static void PrintFieldValuePair(string fieldName, string value, bool copy = true)
     {
-        ImGui.Text($"{fieldName}:");
+        ImGui.TextUnformatted($"{fieldName}:");
         ImGui.SameLine();
+        var grey60 = new Vector4(0.6f, 0.6f, 0.6f, 1);
         if (copy)
         {
-            ClickToCopyText(value);
+            ImGuiHelpers.ClickToCopyText(value, null, grey60);
         }
         else
         {
-            ImGui.TextColored(new(0.6f, 0.6f, 0.6f, 1), value);
+            ImGui.TextColored(grey60, value);
         }
     }
 
@@ -107,14 +73,14 @@ internal static class Gui
     /// <remarks>Colors the text itself either white or black, depending on the luminosity of the background color.</remarks>
     internal static void PrintColor(Vector4 color, string fmt)
     {
-        var c = new ImRaii.Color().Push(Text, Luminosity(color) < 0.5f ? new Vector4(1) : new(0, 0, 0, 1))
-                                  .Push(Button, color)
-                                  .Push(ButtonActive, color)
-                                  .Push(ButtonHovered, color);
+        using (new ImRaii.Color().Push(Text, Luminosity(color) < 0.5f ? new Vector4(1) : new(0, 0, 0, 1))
+                                 .Push(Button, color)
+                                 .Push(ButtonActive, color)
+                                 .Push(ButtonHovered, color))
+        {
+            ImGui.SmallButton(fmt);
+        }
 
-        ImGui.SmallButton(fmt);
-
-        c.Pop(4);
         return;
 
         static double Luminosity(Vector4 vector4) =>
@@ -123,26 +89,6 @@ internal static class Gui
                 (Math.Pow(vector4.Y, 2) * 0.587f) +
                 (Math.Pow(vector4.Z, 2) * 0.114f),
                 0.5f) * vector4.W;
-    }
-
-    /// <inheritdoc cref="ImGuiHelpers.ClickToCopyText"/>
-    internal static void ClickToCopyText(string text, string? textCopy = null)
-    {
-        var c = ImRaii.PushColor(Text, new Vector4(0.6f, 0.6f, 0.6f, 1));
-        ImGuiHelpers.ClickToCopyText(text, textCopy);
-        c.Pop();
-
-        if (ImGui.IsItemHovered())
-        {
-            var t = ImRaii.Tooltip();
-            var f = ImRaii.PushFont(UiBuilder.IconFont);
-            ImGui.Text(FontAwesomeIcon.Copy.ToIconString());
-            f.Pop();
-            ImGui.SameLine();
-            ImGui.Text($"{textCopy ?? text}");
-
-            t.Dispose();
-        }
     }
 
     /// <summary>
@@ -164,9 +110,10 @@ internal static class Gui
 
         var index = (int)Math.Floor(prog * tooltips.Length);
 
-        var t = ImRaii.Tooltip();
-        ImGui.Text(tooltips[index]);
-        t.Dispose();
+        using (ImRaii.Tooltip())
+        {
+            ImGui.TextUnformatted(tooltips[index]);
+        }
 
         return true;
     }

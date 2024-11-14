@@ -1,10 +1,12 @@
+using System.Numerics;
+using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Utility;
-
 using static ImGuiNET.ImGuiTableColumnFlags;
 using static ImGuiNET.ImGuiTableFlags;
+using ImGuiHelpers = UiDebug2.Utility.ImGuiHelpers;
 
 #pragma warning disable IDE0130 // Namespace does not match folder structure
 namespace UiDebug2.Browsing;
@@ -27,44 +29,42 @@ public static class Events
             return;
         }
 
-        var tree = ImRaii.TreeNode($"Events##{(nint)node:X}eventTree");
+        using var tree = ImRaii.TreeNode($"Events##{(nint)node:X}eventTree");
+
         if (tree)
         {
-            var tab = ImRaii.Table($"##{(nint)node:X}eventTable", 7, Resizable | SizingFixedFit | Borders | RowBg);
-
-            ImGui.TableSetupColumn("#", WidthFixed);
-            ImGui.TableSetupColumn("Type", WidthFixed);
-            ImGui.TableSetupColumn("Param", WidthFixed);
-            ImGui.TableSetupColumn("Flags", WidthFixed);
-            ImGui.TableSetupColumn("Unk29", WidthFixed);
-            ImGui.TableSetupColumn("Target", WidthFixed);
-            ImGui.TableSetupColumn("Listener", WidthFixed);
-
-            ImGui.TableHeadersRow();
-
-            var i = 0;
-            while (evt != null)
+            using (ImRaii.Table($"##{(nint)node:X}eventTable", 7, Resizable | SizingFixedFit | Borders | RowBg))
             {
-                ImGui.TableNextColumn();
-                ImGui.Text($"{i++}");
-                ImGui.TableNextColumn();
-                ImGui.Text($"{evt->Type}");
-                ImGui.TableNextColumn();
-                ImGui.Text($"{evt->Param}");
-                ImGui.TableNextColumn();
-                ImGui.Text($"{evt->Flags}");
-                ImGui.TableNextColumn();
-                ImGui.Text($"{evt->Unk29}");
-                ImGui.TableNextColumn();
-                Gui.ClickToCopyText($"{(nint)evt->Target:X}");
-                ImGui.TableNextColumn();
-                Gui.ClickToCopyText($"{(nint)evt->Listener:X}");
-                evt = evt->NextEvent;
+                ImGui.TableSetupColumn("#", WidthFixed);
+                ImGui.TableSetupColumn("Type", WidthFixed);
+                ImGui.TableSetupColumn("Param", WidthFixed);
+                ImGui.TableSetupColumn("Flags", WidthFixed);
+                ImGui.TableSetupColumn("StateFlags1", WidthFixed);
+                ImGui.TableSetupColumn("Target", WidthFixed);
+                ImGui.TableSetupColumn("Listener", WidthFixed);
+
+                ImGui.TableHeadersRow();
+
+                var i = 0;
+                while (evt != null)
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{i++}");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{evt->State.EventType}");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{evt->Param}");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{evt->State.StateFlags}");
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{evt->State.UnkFlags1}");
+                    ImGui.TableNextColumn();
+                    ImGuiHelpers.ClickToCopyText($"{(nint)evt->Target:X}", null, new Vector4(0.6f, 0.6f, 0.6f, 1));
+                    ImGui.TableNextColumn();
+                    ImGuiHelpers.ClickToCopyText($"{(nint)evt->Listener:X}", null, new Vector4(0.6f, 0.6f, 0.6f, 1));
+                    evt = evt->NextEvent;
+                }
             }
-
-            tab.Dispose();
         }
-
-        tree.Dispose();
     }
 }

@@ -1,6 +1,5 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
-
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -50,8 +49,8 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
     /// <summary>
     /// Draws the texture inside the window, in either of two styles.<br/><br/>
-    /// <term>Full Image</term>presents the texture in full as a spritesheet.<br/>
-    /// <term>Parts List</term>presents the individual parts as rows in a table.
+    /// <term>Full Image (0)</term>presents the texture in full as a spritesheet.<br/>
+    /// <term>Parts List (1)</term>presents the individual parts as rows in a table.
     /// </summary>
     private protected void DrawTextureAndParts()
     {
@@ -62,7 +61,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
             return;
         }
 
-        var tree = ImRaii.TreeNode($"Texture##texture{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", SpanFullWidth);
+        using var tree = ImRaii.TreeNode($"Texture##texture{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", SpanFullWidth);
 
         if (tree)
         {
@@ -98,8 +97,6 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
                 this.DrawFullTexture();
             }
         }
-
-        tree.Dispose();
     }
 
     /// <summary>
@@ -173,7 +170,7 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
         var cursorScreenPos = ImGui.GetCursorScreenPos();
         var cursorLocalPos = ImGui.GetCursorPos();
 
-        ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(this.TexData.Texture->Width, this.TexData.Texture->Height));
+        ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(this.TexData.Texture->ActualWidth, this.TexData.Texture->ActualHeight));
 
         for (uint p = 0; p < this.TexData.PartsList->PartCount; p++)
         {
@@ -190,58 +187,62 @@ internal unsafe partial class ImageNodeTree : ResNodeTree
 
     private void PrintPartsTable()
     {
-        var tab = ImRaii.Table($"partsTable##{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", 3, Borders | RowBg | Reorderable);
-        ImGui.TableSetupColumn("Part ID", WidthFixed);
-        ImGui.TableSetupColumn("Part Texture", WidthFixed);
-        ImGui.TableSetupColumn("Coordinates", WidthFixed);
-
-        ImGui.TableHeadersRow();
-
-        var tWidth = this.TexData.Texture->Width;
-        var tHeight = this.TexData.Texture->Height;
-        var textureSize = new Vector2(tWidth, tHeight);
-
-        for (ushort i = 0; i < this.TexData.PartCount; i++)
+        using (ImRaii.Table($"partsTable##{(nint)this.TexData.Texture->D3D11ShaderResourceView:X}", 3, Borders | RowBg | Reorderable))
         {
-            ImGui.TableNextColumn();
+            ImGui.TableSetupColumn("Part ID", WidthFixed);
+            ImGui.TableSetupColumn("Part Texture", WidthFixed);
+            ImGui.TableSetupColumn("Coordinates", WidthFixed);
 
-            var col = i == this.TexData.PartId ? new Vector4(0, 0.85F, 1, 1) : new(1);
-            ImGui.TextColored(col, $"#{i.ToString().PadLeft(this.TexData.PartCount.ToString().Length, '0')}");
+            ImGui.TableHeadersRow();
 
-            ImGui.TableNextColumn();
+            var tWidth = this.TexData.Texture->ActualWidth;
+            var tHeight = this.TexData.Texture->ActualHeight;
+            var textureSize = new Vector2(tWidth, tHeight);
 
-            var part = this.TexData.PartsList->Parts[i];
-            var hiRes = this.TexData.HiRes;
+            for (ushort i = 0; i < this.TexData.PartCount; i++)
+            {
+                ImGui.TableNextColumn();
 
-            var u = hiRes ? part.U * 2f : part.U;
-            var v = hiRes ? part.V * 2f : part.V;
-            var width = hiRes ? part.Width * 2f : part.Width;
-            var height = hiRes ? part.Height * 2f : part.Height;
+                var col = i == this.TexData.PartId ? new Vector4(0, 0.85F, 1, 1) : new(1);
+                ImGui.TextColored(col, $"#{i.ToString().PadLeft(this.TexData.PartCount.ToString().Length, '0')}");
 
-            ImGui.Image(new(this.TexData.Texture->D3D11ShaderResourceView), new(width, height), new Vector2(u, v) / textureSize, new Vector2(u + width, v + height) / textureSize);
+                ImGui.TableNextColumn();
 
-            ImGui.TableNextColumn();
+                var part = this.TexData.PartsList->Parts[i];
+                var hiRes = this.TexData.HiRes;
 
-            ImGui.TextColored(!hiRes ? new(1) : new(0.6f, 0.6f, 0.6f, 1), "Standard:\t");
-            ImGui.SameLine();
-            var cursX = ImGui.GetCursorPosX();
+                var u = hiRes ? part.U * 2f : part.U;
+                var v = hiRes ? part.V * 2f : part.V;
+                var width = hiRes ? part.Width * 2f : part.Width;
+                var height = hiRes ? part.Height * 2f : part.Height;
 
-            PrintPartCoords(u / 2f, v / 2f, width / 2f, height / 2f);
+                ImGui.Image(
+                    new(this.TexData.Texture->D3D11ShaderResourceView),
+                    new(width, height),
+                    new Vector2(u, v) / textureSize,
+                    new Vector2(u + width, v + height) / textureSize);
 
-            ImGui.TextColored(hiRes ? new(1) : new(0.6f, 0.6f, 0.6f, 1), "Hi-Res:\t");
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(cursX);
+                ImGui.TableNextColumn();
 
-            PrintPartCoords(u, v, width, height);
+                ImGui.TextColored(!hiRes ? new(1) : new(0.6f, 0.6f, 0.6f, 1), "Standard:\t");
+                ImGui.SameLine();
+                var cursX = ImGui.GetCursorPosX();
 
-            ImGui.Text("UV:\t");
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(cursX);
+                PrintPartCoords(u / 2f, v / 2f, width / 2f, height / 2f);
 
-            PrintPartCoords(u / tWidth, v / tWidth, (u + width) / tWidth, (v + height) / tHeight, true, true);
+                ImGui.TextColored(hiRes ? new(1) : new(0.6f, 0.6f, 0.6f, 1), "Hi-Res:\t");
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(cursX);
+
+                PrintPartCoords(u, v, width, height);
+
+                ImGui.Text("UV:\t");
+                ImGui.SameLine();
+                ImGui.SetCursorPosX(cursX);
+
+                PrintPartCoords(u / tWidth, v / tWidth, (u + width) / tWidth, (v + height) / tHeight, true, true);
+            }
         }
-
-        tab.Dispose();
     }
 
     /// <summary>

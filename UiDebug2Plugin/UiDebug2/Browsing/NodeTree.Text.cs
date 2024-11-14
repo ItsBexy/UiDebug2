@@ -13,6 +13,7 @@ using UiDebug2.Utility;
 using static Dalamud.Interface.ColorHelpers;
 using static Dalamud.Utility.Util;
 using static UiDebug2.Utility.Gui;
+using ImGuiHelpers = Dalamud.Interface.Utility.ImGuiHelpers;
 
 namespace UiDebug2.Browsing;
 
@@ -49,7 +50,6 @@ internal unsafe partial class TextNodeTree : ResNodeTree
         ImGui.TextColored(new(1), "Text:");
         ImGui.SameLine();
 
-#pragma warning disable
         try
         {
             var style = new SeStringDrawParams
@@ -57,16 +57,17 @@ internal unsafe partial class TextNodeTree : ResNodeTree
                 Color = this.TxtNode->TextColor.RGBA,
                 EdgeColor = this.TxtNode->EdgeColor.RGBA,
                 ForceEdgeColor = true,
-                EdgeStrength = 1f
+                EdgeStrength = 1f,
             };
 
+#pragma warning disable SeStringRenderer
             ImGuiHelpers.SeStringWrapped(this.NodeText.AsSpan(), style);
+#pragma warning restore SeStringRenderer
         }
         catch
         {
-            ImGui.Text(Marshal.PtrToStringAnsi(new(this.NodeText.StringPtr)) ?? "");
+            ImGui.TextUnformatted(Marshal.PtrToStringAnsi(new(this.NodeText.StringPtr)) ?? string.Empty);
         }
-#pragma warning restore
 
         PrintFieldValuePairs(
             ("Font", $"{this.TxtNode->FontType}"),
@@ -82,7 +83,7 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
     private void PrintPayloads()
     {
-        var tree = ImRaii.TreeNode($"Text Payloads##{(nint)this.Node:X}");
+        using var tree = ImRaii.TreeNode($"Text Payloads##{(nint)this.Node:X}");
 
         if (tree)
         {
@@ -97,7 +98,7 @@ internal unsafe partial class TextNodeTree : ResNodeTree
             for (var i = 0; i < seString.Payloads.Count; i++)
             {
                 var payload = seString.Payloads[i];
-                ImGui.Text($"[{i}]");
+                ImGui.TextUnformatted($"[{i}]");
                 ImGui.SameLine();
                 switch (payload.Type)
                 {
@@ -109,13 +110,11 @@ internal unsafe partial class TextNodeTree : ResNodeTree
 
                     default:
                     {
-                        ImGui.Text(payload.ToString());
+                        ImGui.TextUnformatted(payload.ToString());
                         break;
                     }
                 }
             }
         }
-
-        tree.Dispose();
     }
 }

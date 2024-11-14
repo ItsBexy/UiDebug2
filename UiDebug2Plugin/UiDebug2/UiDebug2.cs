@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using UiDebug2.Browsing;
-
 using static ImGuiNET.ImGuiWindowFlags;
 
 namespace UiDebug2;
@@ -83,28 +81,28 @@ internal partial class UiDebug2 : IDisposable
     private void DrawMainPanel()
     {
         ImGui.SameLine();
-        var ch = ImRaii.Child("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar);
 
-        if (this.elementSelector.Active)
+        using (ImRaii.Child("###uiDebugMainPanel", new(-1, -1), true, HorizontalScrollbar))
         {
-            this.elementSelector.DrawSelectorOutput();
-        }
-        else
-        {
-            if (this.SelectedAddonName != null)
+            if (this.elementSelector.Active)
             {
-                var addonTree = AddonTree.GetOrCreate(this.SelectedAddonName);
-
-                if (addonTree == null)
+                this.elementSelector.DrawSelectorOutput();
+            }
+            else
+            {
+                if (this.SelectedAddonName != null)
                 {
-                    this.SelectedAddonName = null;
-                    return;
-                }
+                    var addonTree = AddonTree.GetOrCreate(this.SelectedAddonName);
 
-                addonTree.Draw();
+                    if (addonTree == null)
+                    {
+                        this.SelectedAddonName = null;
+                        return;
+                    }
+
+                    addonTree.Draw();
+                }
             }
         }
-
-        ch.Dispose();
     }
 }
