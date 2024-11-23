@@ -1,18 +1,17 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 
 using ImGuiNET;
+// ReSharper disable All
 
 namespace Dalamud.Interface.Components;
 
 /// <summary>
 /// Class containing various methods providing ImGui components.
 /// </summary>
-[SuppressMessage("ReSharper", "UnusedMember.Global")]
 public static partial class ImGuiComponents
 {
     /// <summary>
@@ -273,7 +272,7 @@ public static partial class ImGuiComponents
     /// <param name="icon">Icon to use.</param>
     /// <param name="text">Text to use.</param>
     /// <returns>Width.</returns>
-    internal static float GetIconButtonWithTextWidth(FontAwesomeIcon icon, string text)
+    public static float GetIconButtonWithTextWidth(FontAwesomeIcon icon, string text)
     {
         using (ImRaii.PushFont(UiBuilder.IconFont))
         {
