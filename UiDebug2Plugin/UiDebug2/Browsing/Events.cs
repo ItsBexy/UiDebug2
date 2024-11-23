@@ -1,4 +1,5 @@
 using System.Numerics;
+
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -30,9 +31,11 @@ public static class Events
 
         using var tree = ImRaii.TreeNode($"Events##{(nint)node:X}eventTree");
 
-        if (tree)
+        if (tree.Success)
         {
-            using (ImRaii.Table($"##{(nint)node:X}eventTable", 7, Resizable | SizingFixedFit | Borders | RowBg))
+            using var tbl = ImRaii.Table($"##{(nint)node:X}eventTable", 7, Resizable | SizingFixedFit | Borders | RowBg);
+
+            if (tbl.Success)
             {
                 ImGui.TableSetupColumn("#", WidthFixed);
                 ImGui.TableSetupColumn("Type", WidthFixed);
@@ -60,7 +63,10 @@ public static class Events
                     ImGui.TableNextColumn();
                     ImGuiHelpers.ClickToCopyText($"{(nint)evt->Target:X}", null, new Vector4(0.6f, 0.6f, 0.6f, 1));
                     ImGui.TableNextColumn();
-                    ImGuiHelpers.ClickToCopyText($"{(nint)evt->Listener:X}", null, new Vector4(0.6f, 0.6f, 0.6f, 1));
+                    ImGuiHelpers.ClickToCopyText(
+                        $"{(nint)evt->Listener:X}",
+                        null,
+                        new Vector4(0.6f, 0.6f, 0.6f, 1));
                     evt = evt->NextEvent;
                 }
             }

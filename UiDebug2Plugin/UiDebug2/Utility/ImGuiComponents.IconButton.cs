@@ -5,8 +5,8 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 
 using ImGuiNET;
-// ReSharper disable All
 
+// ReSharper disable All
 namespace Dalamud.Interface.Components;
 
 /// <summary>

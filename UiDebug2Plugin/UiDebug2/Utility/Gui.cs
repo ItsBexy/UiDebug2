@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
@@ -69,10 +70,10 @@ internal static class Gui
     /// <remarks>Colors the text itself either white or black, depending on the luminosity of the background color.</remarks>
     internal static void PrintColor(Vector4 color, string fmt)
     {
-        using (new ImRaii.Color().Push(Text, Luminosity(color) < 0.5f ? new Vector4(1) : new(0, 0, 0, 1))
-                                 .Push(Button, color)
-                                 .Push(ButtonActive, color)
-                                 .Push(ButtonHovered, color))
+        using (ImRaii.PushColor(Text, Luminosity(color) < 0.5f ? new Vector4(1) : new(0, 0, 0, 1))
+                     .Push(Button, color)
+                     .Push(ButtonActive, color)
+                     .Push(ButtonHovered, color))
         {
             ImGui.SmallButton(fmt);
         }
@@ -106,7 +107,9 @@ internal static class Gui
 
         var index = (int)Math.Floor(prog * tooltips.Length);
 
-        using (ImRaii.Tooltip())
+        using var tt = ImRaii.Tooltip();
+
+        if (tt.Success)
         {
             ImGui.TextUnformatted(tooltips[index]);
         }
